@@ -1,10 +1,11 @@
 // src/Home.jsx
-// FINAL ULTIMATE HOME PAGE - Clean & Working Version
+// FINAL ULTIMATE HOME PAGE - Fully Fixed Version
 
 import { useState, useEffect, useMemo } from 'react'
 import { useGetAllVideosQuery } from './apiSlice'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Eye, Clock, Search as SearchIcon, TrendingUp, Play, X } from 'lucide-react'
+import { useSelector } from 'react-redux'
+import { Eye, Clock, Search as SearchIcon, TrendingUp, Play, X, LogIn, Heart } from 'lucide-react'
 import WelcomePopup from './Welcomepopup'
 
 const CATEGORIES = [
@@ -145,6 +146,9 @@ export default function Home() {
   const searchTerm = searchParams.get('search') || ''
   const activeCategory = searchParams.get('category') || 'All'
 
+  // Get authentication status from Redux
+  const { isAuthenticated } = useSelector((state) => state.auth)
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -158,11 +162,19 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [inputValue, searchTerm, searchParams, setSearchParams])
 
-  const { data: videosData, isLoading, isFetching, isError } = useGetAllVideosQuery({
-    page: 1,
-    limit: 30,
-    query: searchTerm,
-  })
+  // Only fetch videos if user is logged in
+  const { data: videosData, isLoading, isFetching, isError, error } = useGetAllVideosQuery(
+    isAuthenticated 
+      ? { 
+          page: 1, 
+          limit: 30, 
+          query: searchTerm 
+        } 
+      : undefined,
+    { 
+      skip: !isAuthenticated 
+    }
+  )
 
   const videos = videosData?.data || []
 
@@ -194,17 +206,67 @@ export default function Home() {
     setSearchParams({})
   }
 
+  // Show login prompt when user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <WelcomePopup />
+
+        <div className="mb-12 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-3xl p-10 md:p-16 text-center">
+          <div className="mx-auto w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mb-6">
+            <Heart className="w-12 h-12 text-red-500" />
+          </div>
+          
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+            Welcome to the Family
+          </h2>
+          
+          <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
+          Hi, this is Faseeh Khan — welcome to our YouTube app!
+Join our growing community of creators, dreamers, and viewers.
+Watch, like, comment, upload, and manage everything from one dashboard.
+Sign in now and be part of something bigger 🚀
+          </p>
+
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-3 bg-white text-black hover:bg-white/90 transition-all duration-300 
+                       font-semibold text-lg px-10 py-4 rounded-3xl shadow-2xl shadow-red-500/30 hover:scale-105 active:scale-95"
+          >
+            <LogIn size={24} />
+            Login to Join the Family
+          </Link>
+
+          <p className="text-zinc-500 mt-6 text-sm">
+            Don’t have an account?{' '}
+            <Link to="/register" className="text-red-400 hover:text-red-300 underline">
+              Create one — it’s free
+            </Link>
+          </p>
+        </div>
+
+        {/* Optional: Show a teaser message */}
+        <div className="text-center text-zinc-500 text-sm mt-8">
+          faseeh khan . everything is possible when you have dreams
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state only for logged-in users
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
         <div className="text-7xl mb-6">⚠️</div>
-        <h2 className="text-2xl font-bold mb-2">Failed to load videos</h2>
-        <p className="text-zinc-400 max-w-xs">Something went wrong. Please check your connection and try again.</p>
+        <h2 className="text-2xl font-bold mb-3">Failed to load videos</h2>
+        <p className="text-red-400 mb-6 max-w-md">
+          {error?.data?.message || error?.error || "Something went wrong while fetching videos."}
+        </p>
         <button
           onClick={() => window.location.reload()}
           className="mt-8 px-8 py-3.5 bg-red-600 hover:bg-red-500 rounded-3xl font-semibold text-sm"
         >
-          Retry Homepage
+          Retry
         </button>
       </div>
     )
@@ -214,15 +276,12 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      
-      {/* Welcome Popup - ONLY ONCE */}
       <WelcomePopup />
 
       {/* HERO SECTION WITH FASEEH VISION BRANDING */}
       <div className="relative mb-10">
         <div className="bg-gradient-to-r from-zinc-900 to-black border border-white/10 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 overflow-hidden">
           
-          {/* FASEEH VISION BRANDING */}
           <div className="hidden lg:flex flex-1 items-center justify-center relative">
             <div className="w-72 h-72 bg-red-600/10 rounded-[4rem] rotate-12 flex items-center justify-center">
               <div className="text-[180px] opacity-10">🎥</div>
@@ -232,7 +291,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Content */}
           <div className="flex-1 w-full">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-center md:text-left mb-2">
               What are you watching today?
