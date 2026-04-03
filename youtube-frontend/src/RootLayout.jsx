@@ -7,10 +7,11 @@ import { setUser, logout } from './authSlice'
 import {
   Menu, Search, Upload, Bell, Home, PlayCircle,
   Library, History, ThumbsUp, Users, LayoutDashboard,
-  LogOut, X, ChevronDown, Flame, TrendingUp, Tv2,
+  LogOut, ChevronDown, Flame, TrendingUp, Tv2,
   Mic2, Gamepad2, BookOpen, Zap
 } from 'lucide-react'
 import { Toaster } from 'sonner'
+import WelcomePopup from './Welcomepopup'
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Home', path: '/' },
@@ -44,22 +45,15 @@ export default function RootLayout() {
 
   const { user, isAuthenticated } = useSelector((state) => state.auth)
 
-  const { data: currentUserData } = useGetCurrentUserQuery(undefined, {
-    skip: isAuthenticated,
-  })
+  const { data: currentUserData } = useGetCurrentUserQuery(undefined, { skip: isAuthenticated })
 
   useEffect(() => {
-    if (currentUserData?.data) {
-      dispatch(setUser(currentUserData.data))
-    }
+    if (currentUserData?.data) dispatch(setUser(currentUserData.data))
   }, [currentUserData, dispatch])
 
-  // Close profile dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false)
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -86,35 +80,19 @@ export default function RootLayout() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#1a1a1a',
-            color: '#fff',
-            border: '1px solid #2a2a2a',
-            borderRadius: '16px',
-            fontFamily: 'inherit',
-          }
-        }}
-      />
+      <WelcomePopup />
+
+      <Toaster position="top-right" toastOptions={{
+        style: { background: '#1a1a1a', color: '#fff', border: '1px solid #2a2a2a', borderRadius: '16px' }
+      }} />
 
       {/* ── HEADER ── */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center justify-between h-full px-4 gap-4">
 
-          {/* Left: burger + logo */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors md:hidden"
-            >
-              <Menu size={22} />
-            </button>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="w-10 h-10 hidden md:flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors"
-            >
+            <button onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors">
               <Menu size={22} />
             </button>
             <Link to="/" className="flex items-center gap-2.5 group">
@@ -127,48 +105,31 @@ export default function RootLayout() {
             </Link>
           </div>
 
-          {/* Center: search */}
+          {/* Search */}
           <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:block">
             <div className={`relative flex items-center transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : ''}`}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
+              <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
                 placeholder="Search videos, channels..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-5 pr-12 text-sm placeholder-zinc-500 focus:outline-none focus:border-red-500/50 focus:bg-white/8 transition-all"
-              />
-              <button
-                type="submit"
-                className="absolute right-1.5 w-8 h-8 bg-white/8 hover:bg-red-600 rounded-xl flex items-center justify-center transition-colors"
-              >
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-5 pr-12 text-sm placeholder-zinc-500 focus:outline-none focus:border-red-500/50 focus:bg-white/8 transition-all" />
+              <button type="submit" className="absolute right-1.5 w-8 h-8 bg-white/8 hover:bg-red-600 rounded-xl flex items-center justify-center transition-colors">
                 <Search size={16} />
               </button>
             </div>
           </form>
 
-          {/* Right: actions + profile */}
+          {/* Right */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Mobile search */}
             <button
-              onClick={() => {
-                const q = prompt('Search FaseehVision')
-                if (q?.trim()) navigate(`/search?query=${encodeURIComponent(q)}`)
-              }}
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors"
-            >
+              onClick={() => { const q = prompt('Search FaseehVision'); if (q?.trim()) navigate(`/search?query=${encodeURIComponent(q)}`) }}
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors">
               <Search size={20} />
             </button>
 
             {isAuthenticated && (
               <>
-                <Link
-                  to="/upload"
-                  className="hidden sm:flex items-center gap-2 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-red-900/30"
-                >
-                  <Upload size={16} />
-                  Upload
+                <Link to="/upload" className="hidden sm:flex items-center gap-2 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-red-900/30">
+                  <Upload size={16} /> Upload
                 </Link>
                 <button className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors relative">
                   <Bell size={20} />
@@ -179,12 +140,11 @@ export default function RootLayout() {
 
             {isAuthenticated && user ? (
               <div className="relative" ref={profileRef}>
-                <button
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-white/8 transition-colors"
-                >
+                <button onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-white/8 transition-colors">
                   <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/15">
-                    <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                    <img src={user.avatar} alt={user.username} className="w-full h-full object-cover"
+                      onError={e => e.target.src = '/default-avatar.png'} />
                   </div>
                   <ChevronDown size={16} className={`text-zinc-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -203,31 +163,22 @@ export default function RootLayout() {
                       </div>
                     </div>
                     <div className="p-2">
-                      <Link
-                        to={`/channel/${user.username}`}
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm"
-                      >
+                      <Link to={`/channel/${user.username}`} onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm">
                         <div className="w-7 h-7 bg-blue-600/20 rounded-lg flex items-center justify-center">
                           <Users size={14} className="text-blue-400" />
                         </div>
                         My Channel
                       </Link>
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm"
-                      >
+                      <Link to="/dashboard" onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm">
                         <div className="w-7 h-7 bg-purple-600/20 rounded-lg flex items-center justify-center">
                           <LayoutDashboard size={14} className="text-purple-400" />
                         </div>
                         Dashboard
                       </Link>
-                      <Link
-                        to="/upload"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm"
-                      >
+                      <Link to="/upload" onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-colors text-sm">
                         <div className="w-7 h-7 bg-red-600/20 rounded-lg flex items-center justify-center">
                           <Upload size={14} className="text-red-400" />
                         </div>
@@ -235,10 +186,8 @@ export default function RootLayout() {
                       </Link>
                     </div>
                     <div className="p-2 border-t border-white/8">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors text-sm"
-                      >
+                      <button onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors text-sm">
                         <div className="w-7 h-7 bg-red-600/10 rounded-lg flex items-center justify-center">
                           <LogOut size={14} />
                         </div>
@@ -249,10 +198,7 @@ export default function RootLayout() {
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="bg-white text-black px-5 py-2 rounded-xl font-semibold text-sm hover:bg-zinc-100 transition-colors"
-              >
+              <Link to="/login" className="bg-white text-black px-5 py-2 rounded-xl font-semibold text-sm hover:bg-zinc-100 transition-colors">
                 Sign in
               </Link>
             )}
@@ -262,40 +208,25 @@ export default function RootLayout() {
 
       {/* ── SIDEBAR ── */}
       <>
-        {/* Overlay (mobile) */}
         {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
         )}
 
         <aside className={`
-          fixed top-16 left-0 bottom-0 z-40
-          flex flex-col
+          fixed top-16 left-0 bottom-0 z-40 flex flex-col
           bg-[#0d0d0d] border-r border-white/5
           transition-all duration-300 ease-in-out overflow-hidden
           ${sidebarOpen ? 'w-64' : 'w-0 md:w-[72px]'}
         `}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2">
-            {/* Main nav */}
             <nav className="space-y-1">
               {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
                 const active = isActive(path)
                 return (
-                  <Link
-                    key={path}
-                    to={path}
-                    onClick={() => setSidebarOpen(false)}
-                    title={!sidebarOpen ? label : undefined}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group
-                      ${active
-                        ? 'bg-red-600/15 text-red-400'
-                        : 'hover:bg-white/6 text-zinc-400 hover:text-white'
-                      }
-                    `}
-                  >
+                  <Link key={path} to={path} onClick={() => setSidebarOpen(false)} title={!sidebarOpen ? label : undefined}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                      active ? 'bg-red-600/15 text-red-400' : 'hover:bg-white/6 text-zinc-400 hover:text-white'
+                    }`}>
                     <Icon size={20} className="flex-shrink-0" />
                     <span className={`text-sm font-medium whitespace-nowrap transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
                       {label}
@@ -306,16 +237,12 @@ export default function RootLayout() {
               })}
             </nav>
 
-            {/* Categories (only when sidebar open) */}
             {sidebarOpen && (
               <div className="mt-6 pt-6 border-t border-white/5">
                 <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wider px-3 mb-3">Explore</p>
                 <nav className="space-y-1">
                   {CATEGORIES.map(({ icon: Icon, label }) => (
-                    <button
-                      key={label}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/6 text-zinc-400 hover:text-white transition-colors text-sm"
-                    >
+                    <button key={label} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/6 text-zinc-400 hover:text-white transition-colors text-sm">
                       <Icon size={18} className="flex-shrink-0" />
                       {label}
                     </button>
@@ -325,16 +252,11 @@ export default function RootLayout() {
             )}
           </div>
 
-          {/* Bottom: upload CTA */}
           {sidebarOpen && isAuthenticated && (
             <div className="p-3 border-t border-white/5">
-              <Link
-                to="/upload"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-              >
-                <Upload size={16} />
-                Upload Video
+              <Link to="/upload" onClick={() => setSidebarOpen(false)}
+                className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+                <Upload size={16} /> Upload Video
               </Link>
             </div>
           )}

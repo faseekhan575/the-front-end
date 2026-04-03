@@ -1,52 +1,64 @@
 // src/WatchVideo.jsx
-import { useParams, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
   useGetVideoByIdQuery,
   useGetVideoCommentsQuery,
   useAddCommentMutation,
   useToggleVideoLikeMutation,
-  useToggleSubscriptionMutation
-} from './apiSlice'
+  useToggleSubscriptionMutation,
+  useToggleCommentLikeMutation,
+  useGetSubscribedChannelsQuery,
+} from './apiSlice';
 import {
   ThumbsUp, ThumbsDown, Share2, MessageCircle,
   Bell, MoreHorizontal, Flag, ChevronDown, ChevronUp,
   Heart, Send, Copy, Check
-} from 'lucide-react'
-import { useSelector } from 'react-redux'
-import { toast } from 'sonner'
+} from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { toast } from 'sonner';
 
 const timeAgo = (date) => {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000)
-  let interval = seconds / 31536000
-  if (interval > 1) return Math.floor(interval) + "y ago"
-  interval = seconds / 2592000
-  if (interval > 1) return Math.floor(interval) + "mo ago"
-  interval = seconds / 86400
-  if (interval > 1) return Math.floor(interval) + "d ago"
-  interval = seconds / 3600
-  if (interval > 1) return Math.floor(interval) + "h ago"
-  interval = seconds / 60
-  if (interval > 1) return Math.floor(interval) + "m ago"
-  return "just now"
-}
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + "y ago";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + "mo ago";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + "d ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + "h ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + "m ago";
+  return "just now";
+};
 
 const formatNum = (n) => {
-  if (!n) return '0'
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
-  return n
-}
+  if (!n && n !== 0) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n;
+};
 
 function CommentItem({ comment, currentUser }) {
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 80))
-  const [showReply, setShowReply] = useState(false)
+  const [toggleCommentLike] = useToggleCommentLikeMutation();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(comment.likes ?? comment.likeCount ?? 0);
 
-  const handleLike = () => {
-    setLiked(!liked)
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1)
-  }
+  const handleLike = async () => {
+    if (!currentUser) {
+      toast.error("Sign in to like comments");
+      return;
+    }
+    try {
+      await toggleCommentLike(comment._id).unwrap();
+      setLiked(!liked);
+      setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+      toast.success(liked ? "Like removed" : "Comment liked ❤️");
+    } catch {
+      toast.error("Failed to like comment");
+    }
+  };
 
   return (
     <div className="flex gap-3 group">
@@ -66,7 +78,6 @@ function CommentItem({ comment, currentUser }) {
 
         <p className="text-sm text-zinc-200 leading-relaxed">{comment.content}</p>
 
-        {/* Comment actions */}
         <div className="flex items-center gap-4 mt-2">
           <button
             onClick={handleLike}
@@ -75,125 +86,117 @@ function CommentItem({ comment, currentUser }) {
             <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
             <span>{likeCount}</span>
           </button>
-          <button
-            onClick={() => setShowReply(!showReply)}
-            className="text-xs text-zinc-500 hover:text-white transition-colors font-medium"
-          >
-            Reply
-          </button>
+          <button className="text-xs text-zinc-500 hover:text-white transition-colors font-medium">Reply</button>
           <button className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors opacity-0 group-hover:opacity-100">
             <Flag size={13} />
           </button>
         </div>
-
-        {showReply && currentUser && (
-          <div className="mt-3 flex gap-2">
-            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
-              <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
-            </div>
-            <input
-              placeholder={`Reply to @${comment.owner?.username}...`}
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-red-500/50 transition-all"
-            />
-          </div>
-        )}
       </div>
     </div>
-  )
+  );
 }
 
 export default function WatchVideo() {
-  const { videoId } = useParams()
-  const [commentText, setCommentText] = useState('')
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
-  const [subscribed, setSubscribed] = useState(false)
-  const [descExpanded, setDescExpanded] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [showShare, setShowShare] = useState(false)
+  const { videoId } = useParams();
+  const [commentText, setCommentText] = useState('');
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
-  const { data: videoData, isLoading } = useGetVideoByIdQuery(videoId)
-  const { data: commentsData, refetch: refetchComments } = useGetVideoCommentsQuery({ videoId, page: 1, limit: 50 })
-  const [addComment, { isLoading: isCommenting }] = useAddCommentMutation()
-  const [toggleLike] = useToggleVideoLikeMutation()
-  const [toggleSub] = useToggleSubscriptionMutation()
+  const user = useSelector((state) => state.auth.user);
 
-  const video = videoData?.data
-  const comments = commentsData?.data || []
-  const user = useSelector((state) => state.auth.user)
+  const { data: videoData, isLoading, refetch: refetchVideo } = useGetVideoByIdQuery(videoId);
+  const { data: commentsData, refetch: refetchComments } = useGetVideoCommentsQuery(
+    { videoId, page: 1, limit: 50 }
+  );
+  const { data: subscribedData } = useGetSubscribedChannelsQuery(undefined, { skip: !user });
 
-  const handleLike = async () => {
-    try {
-      await toggleLike(videoId).unwrap()
-      setLiked(!liked)
-      setLikeCount(liked ? likeCount - 1 : likeCount + 1)
-    } catch {
-      toast.error("Something went wrong")
+  const [addComment, { isLoading: isCommenting }] = useAddCommentMutation();
+  const [toggleLike] = useToggleVideoLikeMutation();
+  const [toggleSub] = useToggleSubscriptionMutation();
+
+  const video = videoData?.data;
+  const comments = commentsData?.data || [];
+
+  // ✅ Sync like count and liked status from backend on load
+  useEffect(() => {
+    if (video) {
+      setLikeCount(video.likeCount ?? 0);
+      setLiked(video.isLiked ?? false);
     }
-  }
+  }, [video]);
+
+  const subscribedChannels = subscribedData?.data || [];
+  const isOwnVideo = user && video?.owner?._id && String(user._id) === String(video.owner._id);
+
+  const isSubscribed = !isOwnVideo && subscribedChannels.some(
+    (sub) => String(sub.channel?._id) === String(video?.owner?._id)
+  );
+
+  // ✅ Fully working like handler with correct optimistic revert
+  const handleLike = async () => {
+    if (!user) return toast.error("Sign in to like videos");
+
+    const wasLiked = liked;
+
+    // Optimistic update
+    setLiked(!wasLiked);
+    setLikeCount((prev) => Math.max(0, wasLiked ? prev - 1 : prev + 1));
+
+    try {
+      await toggleLike(videoId).unwrap();
+      toast.success(wasLiked ? "Like removed" : "Liked ❤️");
+    } catch {
+      // Revert on failure
+      setLiked(wasLiked);
+      setLikeCount((prev) => Math.max(0, wasLiked ? prev + 1 : prev - 1));
+      toast.error("Something went wrong");
+    }
+  };
 
   const handleSubscribe = async () => {
-    if (!video?.owner?._id) return
+    if (!video?.owner?._id || !user) return toast.error("Sign in to subscribe");
+    if (isOwnVideo) return toast.error("You cannot subscribe to your own channel");
+
     try {
-      await toggleSub(video.owner._id).unwrap()
-      setSubscribed(!subscribed)
-      toast.success(subscribed ? "Unsubscribed" : "Subscribed! 🔔")
+      await toggleSub(video.owner._id).unwrap();
+      toast.success(isSubscribed ? "Unsubscribed" : "Subscribed! 🔔");
     } catch {
-      toast.error("Failed to toggle subscription")
+      toast.error("Failed to toggle subscription");
     }
-  }
+  };
 
   const handleAddComment = async (e) => {
-    e.preventDefault()
-    if (!commentText.trim() || !user) return
+    e.preventDefault();
+    if (!commentText.trim() || !user) return;
     try {
-      await addComment({ videoId, content: commentText }).unwrap()
-      setCommentText('')
-      refetchComments()
-      toast.success("Comment posted!")
+      await addComment({ videoId, content: commentText }).unwrap();
+      setCommentText('');
+      refetchComments();
+      toast.success("Comment posted!");
     } catch {
-      toast.error("Failed to post comment")
+      toast.error("Failed to post comment");
     }
-  }
+  };
 
   const handleShare = () => {
-    const url = window.location.href
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      toast.success("Link copied to clipboard!")
-      setTimeout(() => setCopied(false), 2000)
-    })
-    setShowShare(false)
-  }
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      toast.success("Link copied!");
+      setTimeout(() => setCopied(false), 2000);
+    });
+    setShowShare(false);
+  };
 
   const handleTweet = () => {
-    const text = encodeURIComponent(`Watching "${video?.title}" on FaseehVision 🎬\n${window.location.href}`)
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank')
-  }
+    const text = encodeURIComponent(`Watching "${video?.title}" on FaseehVision 🎬\n${window.location.href}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+  };
 
   if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto animate-pulse">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="aspect-video bg-white/6 rounded-2xl mb-4"></div>
-            <div className="h-6 bg-white/6 rounded-xl w-3/4 mb-3"></div>
-            <div className="h-4 bg-white/6 rounded-xl w-1/2"></div>
-          </div>
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-32 h-20 bg-white/6 rounded-xl flex-shrink-0"></div>
-                <div className="flex-1 space-y-2 pt-1">
-                  <div className="h-3 bg-white/6 rounded w-full"></div>
-                  <div className="h-3 bg-white/6 rounded w-2/3"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+    return <div className="max-w-7xl mx-auto animate-pulse p-8 text-zinc-400">Loading video...</div>;
   }
 
   if (!video) {
@@ -202,22 +205,17 @@ export default function WatchVideo() {
         <div className="text-6xl mb-4">📭</div>
         <h2 className="text-xl font-semibold">Video not found</h2>
       </div>
-    )
+    );
   }
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── LEFT: Video + Info ── */}
         <div className="lg:col-span-2">
-          {/* Player */}
+
+          {/* Video Player */}
           <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-            <video
-              src={video.videofile}
-              controls
-              autoPlay
-              className="w-full h-full"
-            />
+            <video src={video.videofile} controls autoPlay className="w-full h-full" />
           </div>
 
           {/* Title */}
@@ -225,7 +223,8 @@ export default function WatchVideo() {
 
           {/* Channel row + actions */}
           <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-white/8">
-            {/* Channel */}
+
+            {/* Left: Avatar + name + subscribe */}
             <div className="flex items-center gap-3">
               <Link to={`/channel/${video.owner?.username}`}>
                 <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/10 hover:ring-red-500/50 transition-all">
@@ -238,25 +237,31 @@ export default function WatchVideo() {
                 </Link>
                 <p className="text-xs text-zinc-400">@{video.owner?.username}</p>
               </div>
-              <button
-                onClick={handleSubscribe}
-                className={`ml-2 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  subscribed
-                    ? 'bg-white/10 hover:bg-white/15 text-zinc-300'
-                    : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30'
-                }`}
-              >
-                {subscribed ? (
-                  <><Bell size={15} /> Subscribed</>
-                ) : (
-                  'Subscribe'
-                )}
-              </button>
+
+              {!isOwnVideo && (
+                <button
+                  onClick={handleSubscribe}
+                  className={`ml-2 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    isSubscribed
+                      ? 'bg-white/10 hover:bg-white/15 text-zinc-300'
+                      : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30'
+                  }`}
+                >
+                  {isSubscribed ? <><Bell size={15} /> Subscribed</> : 'Subscribe'}
+                </button>
+              )}
+
+              {isOwnVideo && (
+                <div className="ml-2 px-4 py-2 text-sm text-zinc-400 bg-white/5 rounded-xl">
+                  This is your video
+                </div>
+              )}
             </div>
 
-            {/* Action buttons */}
+            {/* Right: Like / Share / More */}
             <div className="flex items-center gap-2">
-              {/* Like / Dislike group */}
+
+              {/* ✅ Like button — now works correctly */}
               <div className="flex items-center bg-white/8 rounded-xl overflow-hidden border border-white/8">
                 <button
                   onClick={handleLike}
@@ -265,7 +270,7 @@ export default function WatchVideo() {
                   }`}
                 >
                   <ThumbsUp size={17} fill={liked ? 'currentColor' : 'none'} />
-                  <span>{formatNum(likeCount || video.likes || 0)}</span>
+                  <span>{formatNum(likeCount)}</span>
                 </button>
                 <button className="px-3 py-2 hover:bg-white/8 text-zinc-400 transition-colors">
                   <ThumbsDown size={17} />
@@ -327,7 +332,6 @@ export default function WatchVideo() {
               <h2 className="text-lg font-bold">{comments.length} Comments</h2>
             </div>
 
-            {/* Add comment */}
             {user ? (
               <form onSubmit={handleAddComment} className="flex gap-3 mb-8">
                 <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-white/10">
@@ -343,8 +347,8 @@ export default function WatchVideo() {
                       className="flex-1 bg-transparent text-sm outline-none resize-none placeholder-zinc-600"
                       style={{ minHeight: '24px' }}
                       onInput={(e) => {
-                        e.target.style.height = 'auto'
-                        e.target.style.height = e.target.scrollHeight + 'px'
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
                       }}
                     />
                     <button
@@ -365,7 +369,6 @@ export default function WatchVideo() {
               </div>
             )}
 
-            {/* Comments list */}
             <div className="space-y-5">
               {comments.length === 0 ? (
                 <div className="text-center py-12 text-zinc-500 text-sm">
@@ -381,7 +384,7 @@ export default function WatchVideo() {
           </div>
         </div>
 
-        {/* ── RIGHT: Sidebar ── */}
+        {/* Sidebar */}
         <div className="lg:col-span-1">
           <h3 className="font-semibold text-sm text-zinc-400 mb-4 uppercase tracking-wider">Up Next</h3>
           <div className="border border-dashed border-white/10 rounded-2xl p-8 text-center text-zinc-500 text-sm">
@@ -391,5 +394,5 @@ export default function WatchVideo() {
         </div>
       </div>
     </div>
-  )
+  );
 }
