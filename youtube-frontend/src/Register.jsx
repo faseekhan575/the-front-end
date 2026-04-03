@@ -44,7 +44,7 @@ export default function Register() {
     data.append('email', formData.email)
     data.append('passward', formData.passward)
     if (avatar) data.append('avatar', avatar)
-    if (coverImage) data.append('coverImages', coverImage)
+    if (coverImage) data.append('coverImage', coverImage)
 
     try {
       await register(data).unwrap()

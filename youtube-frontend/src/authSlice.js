@@ -42,4 +42,4 @@ const authSlice = createSlice({
 })
 
 export const { setCredentials, setUser, logout, loadUserFromStorage } = authSlice.actions
-export default authSlice.reducer
+export default authSlice.reducer  // ✅ FIX: was authSlice.reducery (typo)

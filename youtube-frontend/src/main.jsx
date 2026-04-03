@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { store } from './store'
+import { loadUserFromStorage } from './authSlice' // ✅ FIX: import action
 import './index.css'
 
 // Layouts & Pages
@@ -21,6 +22,10 @@ import History from './History'
 import Subscriptions from './Subscriptions'
 import SearchResults from './SearchResults'
 import ProtectedRoute from './ProtectedRoute'
+
+// ✅ FIX: Load token from localStorage into Redux BEFORE app renders
+// Without this, every page refresh loses the token and all API calls return 401
+store.dispatch(loadUserFromStorage())
 
 const router = createBrowserRouter([
   {
