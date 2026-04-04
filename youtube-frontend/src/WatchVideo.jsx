@@ -160,10 +160,20 @@ function VideoPlayer({ src, poster, title }) {
     v.muted = !v.muted; setMuted(v.muted)
     if (!v.muted && volume === 0) { v.volume = 0.5; setVolume(0.5) }
   }
-  const toggleFS = () => {
-    const el = containerRef.current; if (!el) return
-    document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.()
+const toggleFS = () => {
+  const v = videoRef.current;
+  if (!v) return;
+
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    // Mobile-friendly: request fullscreen on the video itself
+    v.requestFullscreen?.({ navigationUI: "hide" })
+      .catch(() => {
+        toast.error('Fullscreen not supported on this device');
+      });
   }
+};
   const togglePip = async () => {
     const v = videoRef.current; if (!v) return
     try {
