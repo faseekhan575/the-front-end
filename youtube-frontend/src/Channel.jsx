@@ -37,18 +37,15 @@ export default function Channel() {
   const channel = channelData?.data
   const isOwnChannel = currentUser?.username === username
 
-  // Videos of this channel
   const { data: videosData, isLoading: videosLoading } = useGetAllVideosQuery(
     { page: 1, limit: 50, userId: channel?._id || '' },
     { skip: !channel?._id }
   )
 
-  // ✅ Current user's subscriptions (for Subscribe button)
   const { data: subscribedData } = useGetSubscribedChannelsQuery(undefined, {
     skip: !currentUser,
   })
 
-  // ✅ Accurate subscriber count from backend (live & real)
   const { data: channelSubscribersData } = useGetChannelSubscribersQuery(
     channel?._id,
     { skip: !channel?._id }
@@ -61,13 +58,11 @@ export default function Channel() {
 
   const videos = videosData?.data || []
 
-  // ✅ Real subscription status
   const subscribedChannels = subscribedData?.data || []
   const isSubscribed = subscribedChannels.some(
     (sub) => String(sub.channel?._id) === String(channel?._id)
   )
 
-  // ✅ Real subscriber count
   const subscriberCount = channelSubscribersData?.data?.length || 0
 
   const handleSubscribe = async () => {
@@ -78,7 +73,6 @@ export default function Channel() {
     if (!channel?._id) return
     try {
       await toggleSub(channel._id).unwrap()
-      // No local state needed → RTK Query auto-refetches
       toast.success(isSubscribed ? 'Unsubscribed' : 'Subscribed! 🔔')
     } catch {
       toast.error('Failed to toggle subscription')
@@ -123,7 +117,6 @@ export default function Channel() {
 
       <div className="px-4 md:px-6">
         <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-14 relative">
-          {/* Avatar */}
           <div className="flex-shrink-0">
             <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-[#0a0a0a] bg-zinc-800 shadow-2xl">
               <img src={channel.avatar} alt={channel.username} className="w-full h-full object-cover"
@@ -131,7 +124,6 @@ export default function Channel() {
             </div>
           </div>
 
-          {/* Info */}
           <div className="flex-1 flex flex-col md:flex-row md:items-end justify-between gap-4 pb-1">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -222,14 +214,28 @@ export default function Channel() {
                 </div>
               </div>
 
-              {/* Videos grid / list (unchanged) */}
+              {/* PROFESSIONAL GRADE VIDEO SKELETON */}
               {videosLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 animate-pulse">
+                <div className={`grid ${viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4' 
+                  : 'grid-cols-1'} gap-5 animate-pulse`}>
                   {[...Array(8)].map((_, i) => (
-                    <div key={i}>
-                      <div className="aspect-video bg-white/6 rounded-2xl mb-3"></div>
-                      <div className="h-3 bg-white/6 rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-white/6 rounded w-1/2"></div>
+                    <div key={i} className={viewMode === 'list' ? 'flex gap-4 p-3' : ''}>
+                      {/* Thumbnail */}
+                      <div className={`bg-white/6 rounded-2xl relative overflow-hidden
+                        ${viewMode === 'grid' ? 'aspect-video' : 'w-44 flex-shrink-0 h-28'}`}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+                      </div>
+
+                      {/* Text content */}
+                      <div className={viewMode === 'grid' ? 'mt-3 space-y-2' : 'flex-1 py-1 space-y-2'}>
+                        <div className="h-3 bg-white/6 rounded w-[85%]"></div>
+                        <div className="h-3 bg-white/6 rounded w-[60%]"></div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 bg-white/6 rounded w-8"></div>
+                          <div className="h-2 bg-white/6 rounded w-20"></div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -315,6 +321,17 @@ export default function Channel() {
           )}
         </div>
       </div>
+
+      {/* Shimmer Animation */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 1.5s infinite linear;
+        }
+      `}</style>
     </div>
   )
 }

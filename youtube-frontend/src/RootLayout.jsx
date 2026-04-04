@@ -206,7 +206,6 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
             onError={(e) => { e.target.style.display = 'none' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#0f0f0f]" />
-          {/* Glow blobs */}
           <div className="absolute -top-6 -right-6 w-32 h-32 bg-red-600/25 rounded-full blur-3xl" />
           <div className="absolute -bottom-4 left-12 w-20 h-20 bg-red-500/15 rounded-full blur-2xl" />
         </div>
@@ -224,11 +223,9 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
                 className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-70 group-hover:scale-110"
               />
             </div>
-            {/* Camera overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all pointer-events-none rounded-[1.25rem]">
               <Camera size={20} className="text-white drop-shadow-lg" />
             </div>
-            {/* Pen badge */}
             <button
               onClick={() => { setActiveTab('avatar'); setTimeout(() => avatarInputRef.current?.click(), 80) }}
               className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95"
@@ -270,7 +267,7 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
         <div className="px-7 py-6 overflow-y-auto flex-1 scrollbar-hide">
           <StatusToast status={status} onClose={() => setStatus(null)} />
 
-          {/* ── INFO TAB ── */}
+          {/* INFO TAB */}
           {activeTab === 'info' && (
             <div className="space-y-4">
               {[
@@ -300,7 +297,7 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
             </div>
           )}
 
-          {/* ── AVATAR TAB ── */}
+          {/* AVATAR TAB */}
           {activeTab === 'avatar' && (
             <div className="space-y-5">
               <div className="flex flex-col items-center gap-5">
@@ -347,7 +344,7 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
             </div>
           )}
 
-          {/* ── COVER TAB ── */}
+          {/* COVER TAB */}
           {activeTab === 'cover' && (
             <div className="space-y-5">
               <div
@@ -386,7 +383,7 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
             </div>
           )}
 
-          {/* ── PASSWORD TAB ── */}
+          {/* PASSWORD TAB */}
           {activeTab === 'password' && (
             <div className="space-y-4">
               <div className="bg-amber-500/8 border border-amber-500/20 rounded-2xl px-4 py-3 flex items-start gap-3">
@@ -451,28 +448,24 @@ export default function RootLayout() {
   const { data: currentUserData } = useGetCurrentUserQuery(undefined, { skip: !isAuthenticated })
   const currentUser = currentUserData?.data || user
 
-  // Channel stats for the dropdown
   const { data: channelData } = useGetChannelProfileQuery(user?.username, {
     skip: !user?.username || !isAuthenticated,
   })
   const chanStats = channelData?.data
 
-  // Dashboard stats for video + like count
   const { data: dashData } = useGetChannelStatsQuery(undefined, { skip: !isAuthenticated })
-  const dashStats = dashData?.data
+  const dashStats = dashData?.data?.[0] || dashData?.data || {}
 
   useEffect(() => {
     if (currentUserData?.data) dispatch(setUser(currentUserData.data))
   }, [currentUserData, dispatch])
 
-  // Listen for event fired by Home.jsx or any child
   useEffect(() => {
     const open = () => setProfileModalOpen(true)
     window.addEventListener('openEditProfile', open)
     return () => window.removeEventListener('openEditProfile', open)
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
@@ -504,7 +497,6 @@ export default function RootLayout() {
     <div className="min-h-screen bg-[#080808] text-white font-sans">
       <WelcomePopup />
 
-      {/* Global Edit Profile Modal */}
       <EditProfileModal
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
@@ -515,13 +507,9 @@ export default function RootLayout() {
         style: { background: '#161616', color: '#fff', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px' }
       }} />
 
-      {/* ════════════════════════════════════════
-          HEADER
-      ════════════════════════════════════════ */}
       <header className="fixed top-0 left-0 right-0 z-50 h-[3.75rem] bg-[#080808]/95 backdrop-blur-2xl border-b border-white/[.06]">
         <div className="flex items-center justify-between h-full px-4 gap-4">
 
-          {/* Left — hamburger + logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -539,7 +527,6 @@ export default function RootLayout() {
             </Link>
           </div>
 
-          {/* Center — search */}
           <form onSubmit={handleSearch} className="flex-1 max-w-lg hidden md:block">
             <div className={`relative flex items-center transition-all duration-200 ${searchFocused ? 'scale-[1.015]' : ''}`}>
               <Search size={15} className="absolute left-4 text-zinc-500 pointer-events-none" />
@@ -561,9 +548,7 @@ export default function RootLayout() {
             </div>
           </form>
 
-          {/* Right — actions + profile */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Mobile search */}
             <button
               onClick={() => {
                 const q = prompt('Search FaseehVision')
@@ -589,10 +574,8 @@ export default function RootLayout() {
               </>
             )}
 
-            {/* ── Profile ── */}
             {isAuthenticated && user ? (
               <div className="relative" ref={profileRef}>
-                {/* Trigger button */}
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl hover:bg-white/8 transition-colors group"
@@ -606,7 +589,6 @@ export default function RootLayout() {
                         onError={(e) => { e.target.src = '/default-avatar.png' }}
                       />
                     </div>
-                    {/* Tiny pen badge on hover */}
                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-md">
                       <Pencil size={7} />
                     </span>
@@ -614,11 +596,9 @@ export default function RootLayout() {
                   <ChevronDown size={14} className={`text-zinc-500 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* ── Dropdown ── */}
                 {profileOpen && (
                   <div className="absolute right-0 top-full mt-2 w-[17rem] bg-[#111111] border border-white/[.08] rounded-[1.4rem] shadow-[0_24px_72px_rgba(0,0,0,.85)] overflow-hidden z-50">
 
-                    {/* Cover banner */}
                     <div className="h-[3.5rem] relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
                       <img
                         src={currentUser?.coverImages || user?.coverImages || ''}
@@ -630,9 +610,7 @@ export default function RootLayout() {
                       <div className="absolute inset-0 bg-gradient-to-br from-red-900/15 to-transparent" />
                     </div>
 
-                    {/* Avatar + edit btn */}
                     <div className="px-4 -mt-7 flex items-end justify-between">
-                      {/* Avatar with pen */}
                       <div className="relative group">
                         <div
                           className="w-[3.25rem] h-[3.25rem] rounded-2xl overflow-hidden ring-[3px] ring-[#111111] border border-white/15 cursor-pointer shadow-xl"
@@ -653,7 +631,6 @@ export default function RootLayout() {
                         </button>
                       </div>
 
-                      {/* Edit Profile chip */}
                       <button
                         onClick={openModal}
                         className="mb-1 flex items-center gap-1.5 px-3 py-1.5 bg-white/6 hover:bg-white/12 border border-white/10 hover:border-red-500/30 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
@@ -662,32 +639,26 @@ export default function RootLayout() {
                       </button>
                     </div>
 
-                    {/* Name + stats */}
                     <div className="px-4 pt-2.5 pb-4 border-b border-white/[.06]">
                       <p className="font-bold text-[15px] leading-tight truncate">{currentUser?.fullname || user.fullname}</p>
                       <p className="text-xs text-zinc-500 mt-0.5 truncate">@{currentUser?.username || user.username}</p>
 
-                      {/* Stats pills */}
                       <div className="flex items-stretch gap-2 mt-3">
-                        {/* Subscribers */}
                         <div className="flex-1 bg-blue-600/10 border border-blue-500/15 rounded-xl px-2.5 py-2 flex flex-col items-center gap-0.5">
                           <span className="text-sm font-black text-blue-400 leading-none">{fmtCount(chanStats?.subcriberscount)}</span>
                           <span className="text-[9px] text-blue-400/60 font-semibold uppercase tracking-wider">Subs</span>
                         </div>
-                        {/* Videos */}
                         <div className="flex-1 bg-purple-600/10 border border-purple-500/15 rounded-xl px-2.5 py-2 flex flex-col items-center gap-0.5">
-                          <span className="text-sm font-black text-purple-400 leading-none">{fmtCount(dashStats?.totalVideos || dashStats?.totalVideo || 0)}</span>
+                          <span className="text-sm font-black text-purple-400 leading-none">{fmtCount(dashStats?.totalvideos ?? 0)}</span>
                           <span className="text-[9px] text-purple-400/60 font-semibold uppercase tracking-wider">Videos</span>
                         </div>
-                        {/* Likes */}
                         <div className="flex-1 bg-red-600/10 border border-red-500/15 rounded-xl px-2.5 py-2 flex flex-col items-center gap-0.5">
-                          <span className="text-sm font-black text-red-400 leading-none">{fmtCount(dashStats?.totalLikes || 0)}</span>
+                          <span className="text-sm font-black text-red-400 leading-none">{fmtCount(dashStats?.totallikes ?? 0)}</span>
                           <span className="text-[9px] text-red-400/60 font-semibold uppercase tracking-wider">Likes</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Menu */}
                     <div className="p-1.5">
                       {[
                         { to: `/channel/${user.username}`, icon: UserIcon,       color: 'blue',   label: 'My Channel'    },
@@ -702,7 +673,6 @@ export default function RootLayout() {
                           {label}
                         </Link>
                       ))}
-                      {/* Edit Profile in menu */}
                       <button onClick={openModal}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/6 transition-colors text-sm text-zinc-300 hover:text-white">
                         <div className="w-7 h-7 bg-red-600/15 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -712,7 +682,6 @@ export default function RootLayout() {
                       </button>
                     </div>
 
-                    {/* Sign out */}
                     <div className="p-1.5 border-t border-white/[.06]">
                       <button onClick={handleLogout}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-red-500/8 text-red-400 hover:text-red-300 transition-colors text-sm">
@@ -735,11 +704,8 @@ export default function RootLayout() {
         </div>
       </header>
 
-      {/* ════════════════════════════════════════
-          SIDEBAR
-      ════════════════════════════════════════ */}
+      {/* SIDEBAR */}
       <>
-        {/* Mobile backdrop */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/70 z-40 md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
         )}
@@ -751,8 +717,6 @@ export default function RootLayout() {
           ${sidebarOpen ? 'w-60' : 'w-0 md:w-[68px]'}
         `}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 scrollbar-hide">
-
-            {/* Nav items */}
             <nav className="space-y-0.5">
               {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
                 const active = isActive(path)
@@ -767,7 +731,6 @@ export default function RootLayout() {
                         : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-200'
                       }`}
                   >
-                    {/* Active glow line */}
                     {active && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-red-500 rounded-full" />
                     )}
@@ -783,7 +746,6 @@ export default function RootLayout() {
               })}
             </nav>
 
-            {/* Explore section (expanded only) */}
             {sidebarOpen && (
               <div className="mt-5 pt-5 border-t border-white/[.05]">
                 <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[.18em] px-3 mb-2">Explore</p>
@@ -800,10 +762,8 @@ export default function RootLayout() {
             )}
           </div>
 
-          {/* ── Sidebar bottom — user card ── */}
           {sidebarOpen && isAuthenticated && user && (
             <div className="p-2.5 border-t border-white/[.05] space-y-2">
-              {/* Mini profile */}
               <div className="flex items-center gap-2.5 px-2.5 py-2.5 bg-white/[.03] rounded-2xl border border-white/[.05]">
                 <div className="relative flex-shrink-0">
                   <img
@@ -836,9 +796,6 @@ export default function RootLayout() {
         </aside>
       </>
 
-      {/* ════════════════════════════════════════
-          MAIN CONTENT
-      ════════════════════════════════════════ */}
       <main className={`pt-[3.75rem] transition-all duration-300 ${sidebarOpen ? 'md:ml-60' : 'md:ml-[68px]'}`}>
         <div className="p-4 md:p-6 min-h-[calc(100vh-3.75rem)]">
           <Outlet />
