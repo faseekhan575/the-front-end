@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
   useGetAllVideosQuery,
   useGetCurrentUserQuery,
+  useLogoutMutation,
 } from './apiSlice'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import {
   Eye, Clock, Search as SearchIcon, TrendingUp, Play, X, LogIn, Heart,
   Pencil, Camera, Check, AlertCircle, Loader2, User, AtSign, Mail, Save,
-  CheckCircle2, XCircle, Info,
+  CheckCircle2, XCircle, Info, LogOut, ShieldAlert,
 } from 'lucide-react'
 import WelcomePopup from './Welcomepopup'
 
@@ -121,7 +122,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const fileRef = useRef()
 
-  // Sync fields when user changes
   useEffect(() => {
     if (user) {
       setFullname(user.fullname || '')
@@ -131,7 +131,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
     }
   }, [user])
 
-  // Lock body scroll
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
     else       document.body.style.overflow = ''
@@ -157,14 +156,11 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
 
     setSaving(true)
     try {
-      // ── Avatar upload ──────────────────────────────────────────────────────
       if (avatarFile) {
         setAvatarUploading(true)
         const formData = new FormData()
         formData.append('avatar', avatarFile)
-
-        // Replace with your actual avatar-update endpoint
-        const res = await fetch('/api/v1/users/avatar', {
+        const res = await fetch('/api/v1/user/avatar', {
           method: 'PATCH',
           body: formData,
           credentials: 'include',
@@ -174,8 +170,7 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
         setAvatarUploading(false)
       }
 
-      // ── Profile fields ─────────────────────────────────────────────────────
-      const res = await fetch('/api/v1/users/update-account', {
+      const res = await fetch('/api/v1/user/update-account', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -201,20 +196,16 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-
-      {/* Modal */}
       <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 pointer-events-none">
         <div
           className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl shadow-black/60
                      pointer-events-auto animate-[modalIn_0.35s_cubic-bezier(0.34,1.56,0.64,1)]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-white/8">
             <div>
               <h2 className="text-xl font-bold tracking-tight">Edit Profile</h2>
@@ -228,28 +219,18 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
             </button>
           </div>
 
-          {/* Avatar section */}
           <div className="flex flex-col items-center pt-7 pb-4 px-7">
             <div className="relative group">
-              {/* Glow ring animation */}
               <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-red-500/40 to-transparent
                               opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
-
-              {/* Avatar */}
               <div className="relative w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/10 group-hover:ring-red-500/40 transition-all duration-300">
-                <img
-                  src={avatarPreview}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 {avatarUploading && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <Loader2 size={20} className="animate-spin text-white" />
                   </div>
                 )}
               </div>
-
-              {/* Camera overlay */}
               <button
                 onClick={() => fileRef.current?.click()}
                 className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-1
@@ -258,8 +239,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
                 <Camera size={20} className="text-white" />
                 <span className="text-[10px] font-bold text-white">CHANGE</span>
               </button>
-
-              {/* Badge when new avatar selected */}
               {avatarFile && (
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center ring-2 ring-zinc-900">
                   <Check size={12} className="text-white" />
@@ -274,7 +253,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
               className="hidden"
               onChange={handleAvatarChange}
             />
-
             <button
               onClick={() => fileRef.current?.click()}
               className="mt-3 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
@@ -284,9 +262,7 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
             <p className="text-[11px] text-zinc-600 mt-1">JPG, PNG or GIF · Max 5 MB</p>
           </div>
 
-          {/* Fields */}
           <div className="px-7 pb-7 space-y-4">
-            {/* Full name */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
                 <User size={12} /> Full Name
@@ -302,7 +278,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
               />
             </div>
 
-            {/* Username — read only hint */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
                 <AtSign size={12} /> Username
@@ -317,7 +292,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
               />
             </div>
 
-            {/* Email */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
                 <Mail size={12} /> Email
@@ -333,7 +307,6 @@ function ProfileEditModal({ user, open, onClose, onSaved }) {
               />
             </div>
 
-            {/* Save */}
             <button
               onClick={handleSave}
               disabled={saving}
@@ -451,6 +424,82 @@ function VideoSkeleton() {
   )
 }
 
+// ─── Session Expired Screen ───────────────────────────────────────────────────
+function SessionExpiredScreen() {
+  const [signingOut, setSigningOut] = useState(false)
+  const [logout] = useLogoutMutation() // ✅ correct RTK Query hook → POST /api/v1/user/logout
+
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    try {
+      await logout().unwrap() // ✅ calls your backend & invalidates ['User'] Redux cache
+    } catch (_) {
+      // even if server fails, still clear local data and redirect
+    } finally {
+      localStorage.clear()           // ✅ clears any local tokens
+      sessionStorage.clear()         // ✅ clears session data
+      window.location.href = '/login' // ✅ takes user to login page
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+      {/* Icon */}
+      <div className="w-24 h-24 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-[modalIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]">
+        <ShieldAlert size={44} className="text-red-400" />
+      </div>
+
+      {/* Title */}
+      <h2 className="text-3xl font-bold tracking-tight mb-3 animate-[modalIn_0.45s_cubic-bezier(0.34,1.56,0.64,1)]">
+        Session Expired
+      </h2>
+
+      {/* Message */}
+      <p className="text-zinc-400 max-w-sm leading-relaxed mb-2 animate-[modalIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+        For your security, we've signed you out automatically.
+        Please log in again to continue watching.
+      </p>
+      <p className="text-zinc-600 text-sm mb-10 animate-[modalIn_0.52s_cubic-bezier(0.34,1.56,0.64,1)]">
+        Your watch history and preferences are saved ✓
+      </p>
+
+      {/* Button */}
+      <button
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="flex items-center gap-3 px-10 py-4 bg-red-600 hover:bg-red-500
+                   disabled:bg-red-600/50 disabled:cursor-not-allowed
+                   rounded-3xl font-semibold text-base transition-all
+                   hover:scale-105 active:scale-95 shadow-2xl shadow-red-600/30
+                   animate-[modalIn_0.55s_cubic-bezier(0.34,1.56,0.64,1)]"
+      >
+        {signingOut ? (
+          <>
+            <Loader2 size={18} className="animate-spin" />
+            Signing out…
+          </>
+        ) : (
+          <>
+            <LogOut size={18} />
+            Sign Out &amp; Log In Again
+          </>
+        )}
+      </button>
+
+      <p className="text-zinc-600 text-xs mt-6">
+        FaseehVision · keeping your account safe 🔒
+      </p>
+
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.92) translateY(12px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── Main Home ────────────────────────────────────────────────────────────────
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -465,14 +514,12 @@ export default function Home() {
   const { data: currentUserData, refetch: refetchUser } = useGetCurrentUserQuery(undefined, { skip: !isAuthenticated })
   const currentUser = currentUserData?.data
 
-  // Listen for openEditProfile events (from sidebar, nav, etc.)
   useEffect(() => {
     const handler = () => setEditOpen(true)
     window.addEventListener('openEditProfile', handler)
     return () => window.removeEventListener('openEditProfile', handler)
   }, [])
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (inputValue.trim() !== searchTerm) {
@@ -556,7 +603,19 @@ export default function Home() {
   }
 
   // ── ERROR STATE ────────────────────────────────────────────────────────────
+  const isTokenError =
+    error?.status === 401 ||
+    error?.data?.message?.toLowerCase().includes('token') ||
+    error?.data?.message?.toLowerCase().includes('unauthorized') ||
+    error?.error?.toLowerCase?.()?.includes('token')
+
   if (isError) {
+    // ✅ Token expired / unauthorized → friendly session expired screen with proper logout
+    if (isTokenError) {
+      return <SessionExpiredScreen />
+    }
+
+    // Generic error (network down, server 500, etc.)
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
         <div className="text-7xl mb-6">⚠️</div>
@@ -579,10 +638,8 @@ export default function Home() {
   // ── AUTHENTICATED VIEW ─────────────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Global toast container */}
       <ToastContainer />
 
-      {/* Profile Edit Modal */}
       <ProfileEditModal
         user={currentUser}
         open={editOpen}
@@ -608,12 +665,9 @@ export default function Home() {
 
           {/* Search + user profile (right) */}
           <div className="flex-1 w-full">
-            {/* User profile row */}
             {currentUser && (
               <div className="flex items-center gap-3 mb-6">
-                {/* Avatar with camera overlay on hover */}
                 <div className="relative group flex-shrink-0 cursor-pointer" onClick={() => setEditOpen(true)}>
-                  {/* Glow pulse ring */}
                   <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-red-500/50 to-transparent
                                   opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm" />
                   <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-white/15 group-hover:ring-red-500/50 transition-all duration-300">
@@ -622,7 +676,6 @@ export default function Home() {
                       alt={currentUser.fullname}
                       className="w-full h-full object-cover"
                     />
-                    {/* Camera overlay */}
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center
                                     opacity-0 group-hover:opacity-100 transition-all duration-200">
                       <Camera size={14} className="text-white" />
@@ -637,7 +690,6 @@ export default function Home() {
                   <p className="text-xs text-zinc-500 truncate">@{currentUser.username}</p>
                 </div>
 
-                {/* Edit profile button */}
                 <button
                   onClick={() => setEditOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-white/8 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30
@@ -656,7 +708,6 @@ export default function Home() {
               Discover millions of videos from creators around the world
             </p>
 
-            {/* Search bar */}
             <div className="relative max-w-2xl mx-auto md:mx-0">
               <div className="flex items-center bg-white/10 border border-white/20 focus-within:border-red-500 rounded-3xl px-6 py-5 transition-all">
                 <SearchIcon size={24} className="text-zinc-400" />
@@ -683,16 +734,10 @@ export default function Home() {
 
       {/* ── CATEGORY CHIPS ── */}
       <div className="flex items-center gap-3 mb-6">
-        {/* Hide scrollbar cross-browser via inline style */}
         <div
           className="flex gap-2 pb-1 overflow-x-auto flex-1 snap-x"
-          style={{
-            scrollbarWidth: 'none',       /* Firefox */
-            msOverflowStyle: 'none',      /* IE / Edge */
-          }}
-          // Webkit scrollbar hidden via a tiny injected style below
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {/* One-time style injection for webkit — won't cause re-renders */}
           <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
           {CATEGORIES.map((cat) => (
             <button
