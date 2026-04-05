@@ -293,24 +293,62 @@ export default function UploadVideo() {
     setIsUploading(true)
     setUploadProgress(0)
 
+    // ── Checkpoints: 20 → 40 → 55 → 89 → 95 → 99 ──
+    // ~5s gap between each step, holds at 99 until API done.
+    // If API resolves at ANY point mid-animation → instantly jump to 100.
+    const checkpoints = [20, 40, 55, 89, 95, 99]
+    const GAP_MS = 5000          // 5 seconds between each checkpoint
+    let apiDone = false          // true the moment API resolves
+    let apiFailed = false
+    let apiError = null
+    let resolveApiWait = null    // lets the progress loop know API finished early
+
+    // This promise resolves as soon as the API call settles
+    const apiSignal = new Promise(r => { resolveApiWait = r })
+
+    // Kick off the real API call in parallel — don't await here
     const formData = new FormData()
     formData.append('title', title)
     formData.append('description', description)
     formData.append('videofile', videofile)
     formData.append('thumbnail', thumbnail)
 
-    try {
-      // ✅ RTK Query handles the Railway base URL — no more localhost 404!
-      const result = await publishVideo(formData).unwrap()
-      setUploadProgress(100)
-      toast.success('Reel published successfully! 🎉')
-      setTimeout(() => navigate('/'), 700)
-    } catch (err) {
-      toast.error(err?.data?.message || 'Upload failed. Please try again.')
-    } finally {
+    publishVideo(formData).unwrap()
+      .then(() => { apiDone = true; resolveApiWait() })
+      .catch(err => { apiDone = true; apiFailed = true; apiError = err; resolveApiWait() })
+
+    // Walk through each checkpoint with a 5s pause between them.
+    // At every pause we also race against the API signal — if API finishes
+    // early we break out immediately and jump straight to 100%.
+    for (const target of checkpoints) {
+      if (apiDone) break                          // API already done, stop here
+      setUploadProgress(target)                   // snap to checkpoint
+      if (target === 99) break                    // reached 99 → hold, exit loop
+
+      // Wait 5s OR until API resolves — whichever comes first
+      await Promise.race([
+        new Promise(r => setTimeout(r, GAP_MS)),
+        apiSignal,
+      ])
+
+      if (apiDone) break                          // API resolved during the wait
+    }
+
+    // If API still running (we're sitting at 99) → wait for it now
+    if (!apiDone) await apiSignal
+
+    // API is done — handle result
+    if (apiFailed) {
+      toast.error(apiError?.data?.message || 'Upload failed. Please try again.')
       setIsUploading(false)
       setUploadProgress(0)
+      return
     }
+
+    // ✅ Success
+    setUploadProgress(100)
+    toast.success('Reel published successfully! 🎉')
+    setTimeout(() => { setIsUploading(false); setUploadProgress(0); navigate('/') }, 700)
   }
 
   const steps = [
