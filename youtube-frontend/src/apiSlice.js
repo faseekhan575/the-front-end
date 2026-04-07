@@ -1,7 +1,9 @@
 // src/apiSlice.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { setCredentials, logout } from './authSlice'
 
-const baseQuery = fetchBaseQuery({
+// ── RAW BASE QUERY (same as before) ─────────────────────────────────────────
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: 'https://node-chai-production.up.railway.app/',
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
@@ -12,6 +14,45 @@ const baseQuery = fetchBaseQuery({
     return headers
   },
 })
+
+// ── SMART BASE QUERY (auto-refresh on 401) ───────────────────────────────────
+// When any API call returns 401 (token expired), this will:
+// 1. Call your refresh token endpoint silently
+// 2. Save the new access token to Redux + localStorage
+// 3. Retry the original failed request automatically
+// 4. If refresh also fails → log the user out cleanly
+const baseQuery = async (args, api, extraOptions) => {
+  // First attempt — try the original request
+  let result = await rawBaseQuery(args, api, extraOptions)
+
+  if (result?.error?.status === 401) {
+    // Access token expired — try to refresh silently
+    const refreshResult = await rawBaseQuery(
+      { url: '/api/v1/user/refresh-token', method: 'POST' },
+      api,
+      extraOptions
+    )
+
+    if (refreshResult?.data) {
+      // Got new tokens — save to Redux store and localStorage
+      const newAccessToken = refreshResult.data?.data?.accesstoken
+      const currentUser = api.getState()?.auth?.user
+
+      api.dispatch(setCredentials({
+        user: currentUser,
+        accessToken: newAccessToken,
+      }))
+
+      // Retry the original request with new token
+      result = await rawBaseQuery(args, api, extraOptions)
+    } else {
+      // Refresh token also expired — log user out
+      api.dispatch(logout())
+    }
+  }
+
+  return result
+}
 
 export const apiSlice = createApi({
   reducerPath: 'api',
@@ -136,8 +177,6 @@ export const apiSlice = createApi({
       query: () => `/api/v9/subscription/getsubcribedchananl`,
       providesTags: ['Subscription'],
     }),
-    // Fetch all subscribers of the logged-in user's channel
-    // Pass channelId (currentUser._id) from the component
     getChannelSubscribers: builder.query({
       query: (channelId) => `/api/v9/subscription/getchannalsubcribers/${channelId}`,
       providesTags: ['Subscription'],
@@ -245,7 +284,7 @@ export const {
   // Subscription
   useToggleSubscriptionMutation,
   useGetSubscribedChannelsQuery,
-  useGetChannelSubscribersQuery,   // ← subscribers with avatars
+  useGetChannelSubscribersQuery,
   // Dashboard
   useGetChannelStatsQuery,
   useGetMyVideosQuery,
