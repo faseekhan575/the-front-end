@@ -6,6 +6,7 @@ import {
   useTogglePublishMutation,
   useGetChannelSubscribersQuery,
   useGetCurrentUserQuery,
+  useGetLikedVideosQuery,
 } from './apiSlice'
 import { Link } from 'react-router-dom'
 import {
@@ -14,6 +15,7 @@ import {
   Radio, Crown, Clock, UserCheck,
   TrendingUp, BarChart3, Loader2,
   ChevronRight, Pencil, CheckCircle,
+  Heart,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSelector } from 'react-redux'
@@ -51,7 +53,6 @@ const isLive = (v) =>
 // ─── CSS Bar Sparkline ────────────────────────────────────────────────────────
 function Sparkline({ values = [], color = '#ef4444' }) {
   const max = Math.max(...values, 1)
-  const days = ['M','T','W','T','F','S','S']
   const data  = values.slice(-7)
   return (
     <div className="flex items-end gap-[3px] h-10 mt-3">
@@ -77,13 +78,26 @@ function Sparkline({ values = [], color = '#ef4444' }) {
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, color, bg, sparkValues, accentColor }) {
+// NOW CLICKABLE — pass onClick to make it a tab switcher
+function StatCard({ icon: Icon, label, value, color, bg, sparkValues, accentColor, onClick, active }) {
   return (
-    <div className="relative bg-zinc-900 border border-white/8 rounded-2xl p-5 overflow-hidden
-                    hover:border-white/18 transition-all duration-300 group">
+    <button
+      onClick={onClick}
+      className={`relative bg-zinc-900 border rounded-2xl p-5 overflow-hidden
+                  transition-all duration-300 group text-left w-full
+                  ${active
+                    ? 'border-white/30 ring-1 ring-white/20 scale-[1.02]'
+                    : 'border-white/8 hover:border-white/18'}`}
+    >
       {/* Ambient glow */}
       <div className={`absolute -top-8 -right-8 w-28 h-28 ${bg} rounded-full blur-3xl
                        opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
+      {/* Active indicator */}
+      {active && (
+        <div className={`absolute top-0 left-0 right-0 h-0.5 ${bg.replace('/15', '')} rounded-t-2xl`}
+             style={{ background: accentColor }} />
+      )}
 
       <div className="relative">
         <div className="flex items-center justify-between mb-4">
@@ -100,7 +114,7 @@ function StatCard({ icon: Icon, label, value, color, bg, sparkValues, accentColo
           <Sparkline values={sparkValues} color={accentColor} />
         )}
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -146,7 +160,6 @@ function DeleteModal({ video, onConfirm, onCancel, loading }) {
 
 // ─── Subscriber Card ──────────────────────────────────────────────────────────
 function SubscriberCard({ sub }) {
-  // API may return subscriber info nested in `subscriber` or directly
   const user = sub?.subscriber || sub
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/4 border border-white/6
@@ -161,7 +174,6 @@ function SubscriberCard({ sub }) {
             onError={(e) => { e.target.src = '/default-avatar.png' }}
           />
         </div>
-        {/* Online dot - decorative */}
         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full
                         ring-2 ring-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
@@ -187,11 +199,125 @@ function SubscriberCard({ sub }) {
   )
 }
 
+// ─── Liked Video Card ─────────────────────────────────────────────────────────
+// Shows a video this channel owner has liked
+function LikedVideoCard({ video }) {
+  return (
+    <div className="flex gap-3 p-3 rounded-2xl bg-white/4 border border-white/6
+                    hover:bg-white/7 hover:border-white/12 transition-all group">
+      {/* Thumbnail */}
+      <div className="relative flex-shrink-0 w-28 aspect-video rounded-xl overflow-hidden bg-zinc-800">
+        <img
+          src={video?.thumbnail}
+          alt={video?.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => { e.target.style.display = 'none' }}
+        />
+        <div className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded font-bold">
+          {fmtDuration(video?.duration)}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+        <div>
+          <p className="text-sm font-semibold text-white line-clamp-2 leading-snug mb-1">
+            {video?.title || 'Untitled'}
+          </p>
+          <p className="text-xs text-zinc-500 truncate">
+            {video?.owner?.fullname || video?.owner?.username || 'Unknown channel'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-zinc-600 mt-1">
+          <span className="flex items-center gap-1">
+            <Eye size={10} /> {fmt(video?.views)}
+          </span>
+          <span className="flex items-center gap-1 text-red-400/70">
+            <Heart size={10} fill="currentColor" /> Liked
+          </span>
+        </div>
+      </div>
+
+      {/* Play link */}
+      <Link
+        to={`/watch/${video?._id}`}
+        className="opacity-0 group-hover:opacity-100 transition-opacity self-center flex-shrink-0
+                   w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+      >
+        <Play size={14} fill="white" className="text-white ml-0.5" />
+      </Link>
+    </div>
+  )
+}
+
+// ─── Most Viewed Video Row ────────────────────────────────────────────────────
+// Used in the "Views" tab — sorted by view count
+function ViewedVideoRow({ video, rank }) {
+  const rankColors = ['text-yellow-400', 'text-zinc-300', 'text-amber-600']
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/4 border border-white/6
+                    hover:bg-white/7 hover:border-white/12 transition-all group">
+      {/* Rank */}
+      <div className={`w-7 text-center font-black text-lg flex-shrink-0 ${rankColors[rank] || 'text-zinc-700'}`}>
+        {rank + 1}
+      </div>
+
+      {/* Thumbnail */}
+      <div className="relative flex-shrink-0 w-24 aspect-video rounded-xl overflow-hidden bg-zinc-800">
+        <img
+          src={video?.thumbnail}
+          alt={video?.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => { e.target.style.display = 'none' }}
+        />
+        <div className="absolute bottom-1 right-1 bg-black/80 text-[9px] px-1.5 py-0.5 rounded font-bold">
+          {fmtDuration(video?.duration)}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white line-clamp-1 mb-1">{video?.title}</p>
+        <div className="flex items-center gap-3 text-xs text-zinc-500">
+          <span className="flex items-center gap-1 text-blue-400 font-bold">
+            <Eye size={11} /> {fmt(video?.views)} views
+          </span>
+          <span className="flex items-center gap-1">
+            <ThumbsUp size={10} /> {fmt(video?.likes)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock size={10} /> {timeAgo(video?.createdAt)}
+          </span>
+        </div>
+      </div>
+
+      {/* View bar — visual proportion of total views */}
+      <div className="hidden sm:flex flex-col items-end gap-1 flex-shrink-0 w-20">
+        <span className="text-[10px] text-zinc-600">of total</span>
+        <div className="w-full h-1.5 bg-white/8 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full"
+            style={{ width: `${Math.min(100, ((video?.views || 0) / Math.max(video?.views, 1)) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Play */}
+      <Link
+        to={`/watch/${video?._id}`}
+        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0
+                   w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+      >
+        <Play size={14} fill="white" className="text-white ml-0.5" />
+      </Link>
+    </div>
+  )
+}
+
 // ─── Loading Skeleton ─────────────────────────────────────────────────────────
 function Skeleton() {
   return (
     <div className="animate-pulse space-y-8">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <div className="w-14 h-14 bg-white/8 rounded-2xl" />
         <div className="space-y-2">
@@ -199,13 +325,11 @@ function Skeleton() {
           <div className="w-32 h-3 bg-white/6 rounded-xl" />
         </div>
       </div>
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-white/4 rounded-2xl p-5 h-36 border border-white/6" />
         ))}
       </div>
-      {/* Videos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-white/4 rounded-2xl overflow-hidden border border-white/6">
@@ -225,7 +349,6 @@ function Skeleton() {
 export default function Dashboard() {
   const user = useSelector((state) => state.auth.user)
 
-  // Fetch current user to get _id for subscriber query
   const { data: currentUserData } = useGetCurrentUserQuery()
   const currentUser = currentUserData?.data
   const channelId   = currentUser?._id
@@ -235,6 +358,11 @@ export default function Dashboard() {
   const { data: subsData,   isLoading: subsLoading   } = useGetChannelSubscribersQuery(channelId, {
     skip: !channelId,
   })
+  // Liked videos — fetched when user clicks the Likes stat card
+  const [likesTabTouched, setLikesTabTouched] = useState(false)
+  const { data: likedData, isLoading: likedLoading } = useGetLikedVideosQuery(undefined, {
+    skip: !likesTabTouched,
+  })
 
   const [deleteVideo]    = useDeleteVideoMutation()
   const [togglePublish]  = useTogglePublishMutation()
@@ -242,13 +370,20 @@ export default function Dashboard() {
   const [deleteTarget,  setDeleteTarget]  = useState(null)
   const [deleting,      setDeleting]      = useState(false)
   const [togglingId,    setTogglingId]    = useState(null)
-  const [activeTab,     setActiveTab]     = useState('videos') // 'videos' | 'subscribers'
+  const [activeTab,     setActiveTab]     = useState('videos') // 'videos' | 'views' | 'likes' | 'subscribers'
 
-  const stats      = statsData?.data?.[0]  || statsData?.data || {}
-  const videos     = videosData?.data      || []
-  const subscribers = subsData?.data       || []
+  const stats       = statsData?.data?.[0]  || statsData?.data || {}
+  const videos      = videosData?.data      || []
+  const subscribers = subsData?.data        || []
+  const likedVideos = likedData?.data       || []
 
-  // Build fake 7-day sparkline from total (since backend has no time-series)
+  // Videos sorted by views for the "Views" tab
+  const videosByViews = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0))
+
+  // Max views among all videos (for proportional bar in ViewedVideoRow)
+  const maxViews = videosByViews[0]?.views || 1
+
+  // Build fake 7-day sparkline from total
   const viewsSpark = [
     Math.round((stats.totalviews || 0) * 0.55),
     Math.round((stats.totalviews || 0) * 0.62),
@@ -258,6 +393,11 @@ export default function Dashboard() {
     Math.round((stats.totalviews || 0) * 0.91),
     stats.totalviews || 0,
   ]
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'likes') setLikesTabTouched(true)
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -290,6 +430,14 @@ export default function Dashboard() {
   }
 
   if (statsLoading || videosLoading) return <Skeleton />
+
+  // ── TAB CONFIG — drives both the pill switcher and the stat cards ──────────
+  const TAB_META = {
+    views:       { label: 'Top Videos',   icon: Eye,      count: videos.length },
+    likes:       { label: 'Liked by You', icon: ThumbsUp, count: likedVideos.length },
+    subscribers: { label: 'Subscribers',  icon: Users,    count: subscribers.length },
+    videos:      { label: 'Videos',       icon: Video,    count: videos.length },
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -352,7 +500,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* ── STAT CARDS ───────────────────────────────────────────────────────── */}
+      {/* ── STAT CARDS — each card is now a tab switcher ─────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Eye}
@@ -362,6 +510,8 @@ export default function Dashboard() {
           bg="bg-blue-600/15"
           accentColor="#3b82f6"
           sparkValues={viewsSpark}
+          active={activeTab === 'views'}
+          onClick={() => handleTabChange('views')}
         />
         <StatCard
           icon={Users}
@@ -370,6 +520,8 @@ export default function Dashboard() {
           color="text-emerald-400"
           bg="bg-emerald-600/15"
           accentColor="#10b981"
+          active={activeTab === 'subscribers'}
+          onClick={() => handleTabChange('subscribers')}
         />
         <StatCard
           icon={ThumbsUp}
@@ -378,6 +530,8 @@ export default function Dashboard() {
           color="text-red-400"
           bg="bg-red-600/15"
           accentColor="#ef4444"
+          active={activeTab === 'likes'}
+          onClick={() => handleTabChange('likes')}
         />
         <StatCard
           icon={Video}
@@ -386,6 +540,8 @@ export default function Dashboard() {
           color="text-violet-400"
           bg="bg-violet-600/15"
           accentColor="#8b5cf6"
+          active={activeTab === 'videos'}
+          onClick={() => handleTabChange('videos')}
         />
       </div>
 
@@ -404,15 +560,17 @@ export default function Dashboard() {
         <TrendingUp size={20} className="text-red-400 flex-shrink-0 opacity-60" />
       </div>
 
-      {/* ── TABS ─────────────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 bg-white/4 border border-white/8 p-1 rounded-2xl w-fit">
+      {/* ── TABS PILL ROW ────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 bg-white/4 border border-white/8 p-1 rounded-2xl w-fit flex-wrap">
         {[
-          { id: 'videos', label: 'Videos', count: videos.length, icon: Video },
-          { id: 'subscribers', label: 'Subscribers', count: subscribers.length, icon: Users },
+          { id: 'videos',      label: 'Videos',       count: videos.length,      icon: Video    },
+          { id: 'views',       label: 'Top Views',    count: videos.length,      icon: Eye      },
+          { id: 'likes',       label: 'Liked',        count: likedVideos.length, icon: ThumbsUp },
+          { id: 'subscribers', label: 'Subscribers',  count: subscribers.length, icon: Users    },
         ].map(({ id, label, count, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveTab(id)}
+            onClick={() => handleTabChange(id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all
               ${activeTab === id
                 ? 'bg-white text-black shadow-sm'
@@ -464,26 +622,19 @@ export default function Dashboard() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.target.style.display = 'none' }}
                       />
-
-                      {/* Duration badge */}
                       <div className="absolute bottom-2 right-2 bg-black/85 backdrop-blur-sm
                                       text-xs px-2 py-0.5 rounded-lg font-bold">
                         {fmtDuration(video.duration)}
                       </div>
-
-                      {/* LIVE badge */}
                       {live ? (
                         <div className="absolute top-2 left-2 flex items-center gap-1.5
                                         bg-red-600 text-white text-[10px] font-black
                                         px-2.5 py-1 rounded-lg shadow-lg">
-                          <span
-                            className="w-1.5 h-1.5 bg-white rounded-full"
-                            style={{ animation: 'livePulse 1.2s infinite' }}
-                          />
+                          <span className="w-1.5 h-1.5 bg-white rounded-full"
+                                style={{ animation: 'livePulse 1.2s infinite' }} />
                           LIVE
                         </div>
                       ) : (
-                        /* Published / Private badge */
                         <div className={`absolute top-2 left-2 text-[10px] font-bold
                                          px-2.5 py-1 rounded-lg
                                          ${video.isPublished
@@ -492,8 +643,6 @@ export default function Dashboard() {
                           {video.isPublished ? '● Published' : '○ Private'}
                         </div>
                       )}
-
-                      {/* Hover play overlay */}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100
                                       transition-opacity flex items-center justify-center">
                         <Link
@@ -512,7 +661,6 @@ export default function Dashboard() {
                       <h3 className="font-bold text-sm line-clamp-2 leading-snug mb-2 flex-1">
                         {video.title}
                       </h3>
-
                       <div className="flex items-center justify-between text-xs text-zinc-500 mb-4">
                         <div className="flex items-center gap-1">
                           <Eye size={11} />
@@ -526,7 +674,6 @@ export default function Dashboard() {
 
                       {/* Action buttons */}
                       <div className="grid grid-cols-4 gap-1.5">
-                        {/* Watch */}
                         <Link
                           to={`/watch/${video._id}`}
                           className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl
@@ -538,8 +685,6 @@ export default function Dashboard() {
                           <Play size={13} />
                           Watch
                         </Link>
-
-                        {/* Toggle publish */}
                         <button
                           onClick={() => handleToggle(video)}
                           disabled={!!togglingId}
@@ -558,8 +703,6 @@ export default function Dashboard() {
                               : <><CheckCircle size={13} /><span>Pub</span></>
                           }
                         </button>
-
-                        {/* Edit */}
                         <Link
                           to={`/edit/${video._id}`}
                           title="Edit"
@@ -571,8 +714,6 @@ export default function Dashboard() {
                           <Pencil size={13} />
                           Edit
                         </Link>
-
-                        {/* Delete */}
                         <button
                           onClick={() => setDeleteTarget(video)}
                           title="Delete"
@@ -592,6 +733,93 @@ export default function Dashboard() {
             </div>
           )}
         </>
+      )}
+
+      {/* ── VIEWS TAB — top videos by view count ─────────────────────────────── */}
+      {activeTab === 'views' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold">Most Watched Videos</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Your videos ranked by total views</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10
+                            border border-blue-500/20 px-3 py-1.5 rounded-xl">
+              <Eye size={12} />
+              {fmt(stats.totalviews)} total views
+            </div>
+          </div>
+
+          {videosByViews.length === 0 ? (
+            <div className="text-center py-24 border border-dashed border-white/10 rounded-3xl">
+              <div className="w-16 h-16 bg-white/4 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Eye size={28} className="text-zinc-700" />
+              </div>
+              <p className="text-zinc-400 font-semibold">No videos to show</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {videosByViews.map((video, i) => (
+                // Pass maxViews down so the bar is proportional across all rows
+                <ViewedVideoRow
+                  key={video._id}
+                  video={{ ...video, _maxViews: maxViews }}
+                  rank={i}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── LIKES TAB — videos this channel owner has liked ──────────────────── */}
+      {activeTab === 'likes' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold">
+                Videos You've Liked
+                <span className="ml-2 text-zinc-500 font-normal text-sm">{likedVideos.length}</span>
+              </h2>
+              <p className="text-xs text-zinc-500 mt-0.5">All videos liked by your account</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10
+                            border border-red-500/20 px-3 py-1.5 rounded-xl">
+              <Heart size={12} fill="currentColor" />
+              {fmt(likedVideos.length)} liked
+            </div>
+          </div>
+
+          {likedLoading ? (
+            <div className="space-y-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse flex gap-3 p-3 rounded-2xl bg-white/4 border border-white/6">
+                  <div className="w-24 aspect-video rounded-xl bg-white/10 flex-shrink-0" />
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-3 bg-white/10 rounded w-3/4" />
+                    <div className="h-2 bg-white/6 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : likedVideos.length === 0 ? (
+            <div className="text-center py-24 border border-dashed border-white/10 rounded-3xl">
+              <div className="w-16 h-16 bg-white/4 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <ThumbsUp size={28} className="text-zinc-700" />
+              </div>
+              <p className="text-zinc-400 font-semibold mb-2">No liked videos yet</p>
+              <p className="text-zinc-600 text-sm">Videos you like across the platform will appear here</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {likedVideos.map((item, i) => {
+                // API may return the video directly or nested under a key
+                const video = item?.video || item
+                return <LikedVideoCard key={video?._id || i} video={video} />
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── SUBSCRIBERS TAB ──────────────────────────────────────────────────── */}
@@ -634,6 +862,7 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
     </div>
   )
 }
