@@ -1018,7 +1018,7 @@ export default function Playlists() {
                   {(isCreating || isUpdating) ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Saving...
+                      Saving...,
                     </>
                   ) : (
                     <>
