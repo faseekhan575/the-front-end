@@ -4,6 +4,13 @@ import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+// ✅ FETCH HANDLER — required for Chrome A2HS install prompt
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  )
+})
+
 // ── PUSH NOTIFICATION HANDLER ──────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return
@@ -37,7 +44,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app already open — focus it and navigate
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
           client.focus()
@@ -45,7 +51,6 @@ self.addEventListener('notificationclick', (event) => {
           return
         }
       }
-      // Otherwise open new window
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen)
       }

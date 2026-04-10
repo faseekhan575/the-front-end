@@ -5,14 +5,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     react(),
-
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [
-        'favicon.ico',
-        'apple-touch-icon.png',
-        'masked-icon.svg',
-      ],
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
 
       manifest: {
         name: 'FaseehVision',
@@ -23,38 +22,37 @@ export default defineConfig({
         display: 'standalone',
         scope: '/',
         start_url: '/',
-
-   icons: [
-  {
-    src: '/for.jpeg',
-    sizes: '512x512',
-    type: 'image/jpeg',
-  },
-  {
-    src: '/for-maskable.png',
-    sizes: '512x512',
-    type: 'image/png',
-    purpose: 'any maskable',
-  },
-]
+        icons: [
+          {
+            src: '/pwa-192x192.png',   // ✅ PNG, 192px
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512x512.png',   // ✅ PNG, 512px
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512x512-maskable.png',  // ✅ maskable separate
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
       },
 
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
-
-      // Custom service worker for push notifications
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.js',
     }),
   ],
 
-  // ✅ your original React + dependency fix config (kept)
   optimizeDeps: {
     include: ['sonner', 'react', 'react-dom'],
   },
-
   resolve: {
     dedupe: ['react', 'react-dom'],
   },
