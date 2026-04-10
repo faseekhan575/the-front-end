@@ -60,6 +60,26 @@ export const apiSlice = createApi({
   tagTypes: ['User', 'Video', 'Comment', 'Like', 'Playlist', 'Subscription', 'Dashboard', 'Tweet'],
   endpoints: (builder) => ({
 
+
+    // ── PUSH NOTIFICATIONS ───────────────────────────────────────────────────
+subscribePush: builder.mutation({
+  query: (subscription) => ({
+    url: '/api/v10/push/subscribe',
+    method: 'POST',
+    body: subscription,
+  }),
+}),
+unsubscribePush: builder.mutation({
+  query: (endpoint) => ({
+    url: '/api/v10/push/unsubscribe',
+    method: 'DELETE',
+    body: { endpoint },
+  }),
+}),
+getVapidKey: builder.query({
+  query: () => '/api/v10/push/vapid-public-key',
+}),
+
     // ── AUTH ────────────────────────────────────────────────────────────────
     register: builder.mutation({
       query: (formData) => ({ url: '/api/v1/user/Register', method: 'POST', body: formData }),
@@ -300,4 +320,8 @@ export const {
   useGetUserTweetsQuery,
   useDeleteTweetMutation,
   useUpdateTweetMutation,
+  //new PWA
+  useSubscribePushMutation,
+useUnsubscribePushMutation,
+useGetVapidKeyQuery,
 } = apiSlice

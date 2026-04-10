@@ -1,6 +1,8 @@
 // src/RootLayout.jsx — Premium Redesign + Integrated Edit Profile
 
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom'
+import InstallBanner from './InstallBanner'
+import NotificationBell from './NotificationBell'
 import { useSelector, useDispatch } from 'react-redux'
 import { useEffect, useState, useRef } from 'react'
 import {
@@ -567,10 +569,11 @@ export default function RootLayout() {
                 >
                   <Upload size={15} /> Upload
                 </Link>
-                <button className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors">
+                {/* <button className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors">
                   <Bell size={18} />
                   <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full" />
-                </button>
+                </button> */}
+                <NotificationBell />
               </>
             )}
 
@@ -801,6 +804,7 @@ export default function RootLayout() {
           <Outlet />
         </div>
       </main>
+      <InstallBanner />
     </div>
   )
 }
