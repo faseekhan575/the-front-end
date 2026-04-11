@@ -827,7 +827,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="text-center text-[5px] text-white mt-14">
+      <div className="text-center text-[14px] text-white mt-14">
         FaseehVision · everything is possible when you have dreams
       </div>
 
