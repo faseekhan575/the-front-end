@@ -8,7 +8,6 @@ export default function NotificationBell() {
 
   if (!('Notification' in window)) return null
 
-  // Show tooltip on first visit if not subscribed
   useEffect(() => {
     if (!isSubscribed) {
       const seen = localStorage.getItem('bell_tooltip_seen')
@@ -25,9 +24,9 @@ export default function NotificationBell() {
   }
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex' }}>
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
 
-      {/* Tooltip popup */}
+      {/* Tooltip */}
       {showTooltip && !isSubscribed && (
         <div ref={tooltipRef} style={{
           position: 'absolute',
@@ -41,17 +40,10 @@ export default function NotificationBell() {
           zIndex: 999,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
-          {/* Arrow */}
           <div style={{
-            position: 'absolute',
-            top: '-6px',
-            right: '14px',
-            width: '10px',
-            height: '10px',
-            background: '#212121',
-            border: '0.5px solid #333',
-            borderRight: 'none',
-            borderBottom: 'none',
+            position: 'absolute', top: '-6px', right: '14px',
+            width: '10px', height: '10px', background: '#212121',
+            border: '0.5px solid #333', borderRight: 'none', borderBottom: 'none',
             transform: 'rotate(45deg)',
           }} />
           <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginBottom: '6px' }}>
@@ -61,103 +53,80 @@ export default function NotificationBell() {
             Get notified when new videos are uploaded
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={handleClick}
-              style={{
-                flex: 1,
-                background: '#ff0000',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '8px',
-                fontSize: '12px',
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              Allow
-            </button>
-            <button
-              onClick={() => setShowTooltip(false)}
-              style={{
-                flex: 1,
-                background: 'transparent',
-                color: '#aaa',
-                border: '0.5px solid #444',
-                borderRadius: '6px',
-                padding: '8px',
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
-            >
-              Later
-            </button>
+            <button onClick={handleClick} style={{
+              flex: 1, background: '#ff0000', color: '#fff', border: 'none',
+              borderRadius: '6px', padding: '8px', fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+            }}>Allow</button>
+            <button onClick={() => setShowTooltip(false)} style={{
+              flex: 1, background: 'transparent', color: '#aaa',
+              border: '0.5px solid #444', borderRadius: '6px',
+              padding: '8px', fontSize: '12px', cursor: 'pointer',
+            }}>Later</button>
           </div>
         </div>
       )}
 
-      {/* Bell button */}
-      <button
-        onClick={handleClick}
-        disabled={isLoading}
-        title={isSubscribed ? 'Disable notifications' : 'Enable notifications'}
-        style={{
-          position: 'relative',
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          background: isSubscribed ? '#ff0000' : 'transparent',
-          border: isSubscribed ? 'none' : '0.5px solid #444',
-          cursor: isLoading ? 'wait' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background 0.2s, transform 0.1s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = isSubscribed ? '#cc0000' : '#2a2a2a'}
-        onMouseLeave={e => e.currentTarget.style.background = isSubscribed ? '#ff0000' : 'transparent'}
-        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
-        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-      >
-        {isLoading ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="#888" strokeWidth="2"
-            style={{ animation: 'bellSpin 1s linear infinite' }}>
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 6v6l4 2"/>
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={isSubscribed ? '#fff' : '#aaa'} strokeWidth="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-        )}
+      {/* Bell + X wrapper */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
 
-        {/* Red dot when subscribed */}
-        {isSubscribed && (
-          <span style={{
-            position: 'absolute',
-            top: '1px',
-            right: '1px',
-            width: '10px',
-            height: '10px',
-            background: '#fff',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              background: '#ff0000',
-              borderRadius: '50%',
-              display: 'block',
-            }} />
-          </span>
+        {/* Bell button */}
+        <button
+          onClick={!isSubscribed ? handleClick : undefined}
+          disabled={isLoading}
+          title={isSubscribed ? 'Notifications on' : 'Enable notifications'}
+          style={{
+            width: '40px', height: '40px', borderRadius: '50%',
+            background: isSubscribed ? 'rgba(255,255,255,0.1)' : 'transparent',
+            border: 'none',
+            cursor: isSubscribed ? 'default' : isLoading ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={e => { if (!isSubscribed) e.currentTarget.style.background = '#1a1a1a' }}
+          onMouseLeave={e => { if (!isSubscribed) e.currentTarget.style.background = 'transparent' }}
+        >
+          {isLoading ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#555" strokeWidth="2"
+              style={{ animation: 'bellSpin 1s linear infinite' }}>
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          ) : (
+            /* Bell icon — bright white when subscribed, dim when not */
+            <svg width="20" height="20" viewBox="0 0 24 24"
+              fill={isSubscribed ? '#fff' : 'none'}
+              stroke={isSubscribed ? '#fff' : '#666'}
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          )}
+        </button>
+
+        {/* X button — only show when subscribed */}
+        {isSubscribed && !isLoading && (
+          <button
+            onClick={unsubscribe}
+            title="Turn off notifications"
+            style={{
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              opacity: 0.5, transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         )}
-      </button>
+      </div>
 
       <style>{`
         @keyframes bellSpin { to { transform: rotate(360deg); } }
