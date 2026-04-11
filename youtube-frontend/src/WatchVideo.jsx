@@ -19,14 +19,20 @@ import {
 import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
+// ─── Detect iOS PWA ───────────────────────────────────────────────────────────
+const isIOSPWA = () =>
+  typeof window !== 'undefined' &&
+  /iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+  window.navigator.standalone === true
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const timeAgo = (date) => {
   const s = Math.floor((Date.now() - new Date(date)) / 1000)
-  if (s < 60)      return 'just now'
-  if (s < 3600)    return Math.floor(s / 60)    + 'm ago'
-  if (s < 86400)   return Math.floor(s / 3600)  + 'h ago'
-  if (s < 2592000) return Math.floor(s / 86400) + 'd ago'
-  if (s < 31536000)return Math.floor(s / 2592000)+ 'mo ago'
+  if (s < 60)       return 'just now'
+  if (s < 3600)     return Math.floor(s / 60)     + 'm ago'
+  if (s < 86400)    return Math.floor(s / 3600)   + 'h ago'
+  if (s < 2592000)  return Math.floor(s / 86400)  + 'd ago'
+  if (s < 31536000) return Math.floor(s / 2592000) + 'mo ago'
   return Math.floor(s / 31536000) + 'y ago'
 }
 
@@ -122,7 +128,6 @@ function CommentItem({ comment, currentUser }) {
           />
         </div>
       </Link>
-
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <Link
@@ -156,42 +161,120 @@ function CommentItem({ comment, currentUser }) {
   )
 }
 
+// ─── VideoPlayer — iOS PWA safe ───────────────────────────────────────────────
+// Key insight: iOS PWA completely blocks any programmatic play() call.
+// The ONLY way to play video on iOS PWA is a direct user tap on the element.
+// So on iOS PWA we skip autoPlay entirely and show a tap overlay instead.
+function VideoPlayer({ src, poster }) {
+  const videoRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const ios = isIOSPWA()
+
+  // ── Non-iOS: normal behaviour, autoPlay works fine ──
+  if (!ios) {
+    return (
+      <video
+        src={src}
+        controls
+        autoPlay
+        playsInline
+        preload="metadata"
+        webkit-playsinline="true"
+        x-webkit-airplay="allow"
+        className="w-full h-full"
+        poster={poster}
+      />
+    )
+  }
+
+  // ── iOS PWA: tap overlay triggers play() synchronously inside click ──
+  const handleTap = () => {
+    const vid = videoRef.current
+    if (!vid) return
+    // This is inside a direct click handler → iOS allows it
+    vid.play().catch(() => {})
+    setPlaying(true)
+  }
+
+  return (
+    <div className="relative w-full h-full bg-black">
+      <video
+        ref={videoRef}
+        src={src}
+        controls
+        playsInline
+        preload="metadata"
+        webkit-playsinline="true"
+        x-webkit-airplay="allow"
+        className="w-full h-full"
+        poster={poster}
+        onPlay={()  => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        // ✋ NO autoPlay — iOS PWA silently kills it
+      />
+
+      {/* Overlay: only shown before first tap */}
+      {!playing && (
+        <div
+          onClick={handleTap}
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.52)', cursor: 'pointer' }}
+        >
+          {/* Red play button */}
+          <div style={{
+            width: '76px', height: '76px', borderRadius: '50%',
+            background: 'rgba(239,68,68,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 48px rgba(239,68,68,0.45)',
+            marginBottom: '14px',
+            transition: 'transform 0.15s',
+          }}>
+            <Play size={34} color="#fff" fill="#fff" style={{ marginLeft: '5px' }} />
+          </div>
+          <p style={{
+            color: 'rgba(255,255,255,0.65)',
+            fontSize: '13px',
+            fontWeight: 600,
+            letterSpacing: '0.03em',
+          }}>
+            Tap to play
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main WatchVideo ──────────────────────────────────────────────────────────
 export default function WatchVideo() {
   const { videoId } = useParams()
 
-  const [commentText,   setCommentText]   = useState('')
-  const [liked,         setLiked]         = useState(false)
-  const [likeCount,     setLikeCount]     = useState(0)
-  const [descExpanded,  setDescExpanded]  = useState(false)
-  const [copied,        setCopied]        = useState(false)
-  const [showShare,     setShowShare]     = useState(false)
-  const [subLoading,    setSubLoading]    = useState(false)
-
-  // ── iOS PWA fix ──
-  const [needsTap,      setNeedsTap]      = useState(false)
-  const videoRef    = useRef(null)
-  // ─────────────────
-
+  const [commentText,  setCommentText]  = useState('')
+  const [liked,        setLiked]        = useState(false)
+  const [likeCount,    setLikeCount]    = useState(0)
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [copied,       setCopied]       = useState(false)
+  const [showShare,    setShowShare]    = useState(false)
+  const [subLoading,   setSubLoading]   = useState(false)
   const textareaRef = useRef(null)
   const shareRef    = useRef(null)
 
   const user = useSelector((state) => state.auth.user)
 
-  const { data: videoData,    isLoading }        = useGetVideoByIdQuery(videoId)
+  const { data: videoData,    isLoading }               = useGetVideoByIdQuery(videoId)
   const { data: commentsData, refetch: refetchComments } = useGetVideoCommentsQuery(
     { videoId, page: 1, limit: 50 }
   )
   const { data: subscribedData } = useGetSubscribedChannelsQuery(undefined, { skip: !user })
 
-  const [addComment,  { isLoading: isCommenting }] = useAddCommentMutation()
-  const [toggleLike]  = useToggleVideoLikeMutation()
-  const [toggleSub]   = useToggleSubscriptionMutation()
+  const [addComment, { isLoading: isCommenting }] = useAddCommentMutation()
+  const [toggleLike] = useToggleVideoLikeMutation()
+  const [toggleSub]  = useToggleSubscriptionMutation()
 
   const video    = videoData?.data
   const comments = commentsData?.data || []
 
-  // Sync from backend
   useEffect(() => {
     if (video) {
       setLikeCount(video.likeCount ?? 0)
@@ -199,19 +282,6 @@ export default function WatchVideo() {
     }
   }, [video])
 
-  // ── iOS PWA: catch autoPlay block and show tap overlay ──
-  useEffect(() => {
-    const vid = videoRef.current
-    if (!vid || !video) return
-    setNeedsTap(false)
-    const promise = vid.play()
-    if (promise !== undefined) {
-      promise.catch(() => setNeedsTap(true))
-    }
-  }, [video])
-  // ────────────────────────────────────────────────────────
-
-  // Close share dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (shareRef.current && !shareRef.current.contains(e.target)) setShowShare(false)
@@ -221,12 +291,11 @@ export default function WatchVideo() {
   }, [])
 
   const subscribedChannels = subscribedData?.data || []
-  const isOwnVideo  = user && video?.owner?._id && String(user._id) === String(video.owner._id)
+  const isOwnVideo   = user && video?.owner?._id && String(user._id) === String(video.owner._id)
   const isSubscribed = !isOwnVideo && subscribedChannels.some(
     (sub) => String(sub.channel?._id) === String(video?.owner?._id)
   )
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!user) return toast.error('Sign in to like videos')
     const wasLiked = liked
@@ -285,7 +354,6 @@ export default function WatchVideo() {
     setShowShare(false)
   }
 
-  // ── States ────────────────────────────────────────────────────────────────
   if (isLoading) return <WatchSkeleton />
 
   if (!video) {
@@ -327,37 +395,8 @@ export default function WatchVideo() {
           <div className="lg:col-span-2 min-w-0">
 
             {/* ── VIDEO PLAYER ── */}
-            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/70 ring-1 ring-white/8 relative">
-              <video
-                ref={videoRef}
-                src={video.videofile}
-                controls
-                autoPlay
-                playsInline
-                preload="metadata"
-                webkit-playsinline="true"
-                x-webkit-airplay="allow"
-                className="w-full h-full"
-                poster={video.thumbnail}
-                onPlay={() => setNeedsTap(false)}
-              />
-
-              {/* iOS PWA tap-to-play overlay — only appears when autoPlay is blocked */}
-              {needsTap && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                  style={{ background: 'rgba(0,0,0,0.45)' }}
-                  onClick={() => {
-                    videoRef.current?.play()
-                    setNeedsTap(false)
-                  }}
-                >
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center border border-white/30"
-                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-                    <Play size={36} className="text-white ml-1" fill="white" />
-                  </div>
-                </div>
-              )}
+            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/70 ring-1 ring-white/8">
+              <VideoPlayer src={video.videofile} poster={video.thumbnail} />
             </div>
 
             {/* ── TITLE ── */}
@@ -379,9 +418,7 @@ export default function WatchVideo() {
             </div>
 
             {/* ── CHANNEL ROW + ACTION BUTTONS ── */}
-            <div className="flex items-center justify-between gap-3 flex-wrap
-                            py-4 border-y border-white/8">
-
+            <div className="flex items-center justify-between gap-3 flex-wrap py-4 border-y border-white/8">
               <div className="flex items-center gap-3">
                 <Link to={`/channel/${video.owner?.username}`} className="flex-shrink-0">
                   <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/10
@@ -417,9 +454,7 @@ export default function WatchVideo() {
                   >
                     {subLoading
                       ? <Loader2 size={13} className="animate-spin" />
-                      : isSubscribed
-                        ? <BellOff size={13} />
-                        : <Bell size={13} />
+                      : isSubscribed ? <BellOff size={13} /> : <Bell size={13} />
                     }
                     {isSubscribed ? 'Subscribed' : 'Subscribe'}
                   </button>
@@ -431,7 +466,6 @@ export default function WatchVideo() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-
                 <div className="flex items-center bg-white/8 rounded-xl overflow-hidden border border-white/8">
                   <button
                     onClick={handleLike}
@@ -473,10 +507,7 @@ export default function WatchVideo() {
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/6
                                    text-sm font-medium text-zinc-300 hover:text-white transition-colors"
                       >
-                        {copied
-                          ? <Check size={15} className="text-emerald-400" />
-                          : <Copy size={15} />
-                        }
+                        {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
                         Copy link
                       </button>
                       <button
@@ -501,10 +532,8 @@ export default function WatchVideo() {
             {/* ── DESCRIPTION ── */}
             <div className="mt-4 bg-zinc-900/70 border border-white/8 rounded-2xl p-5
                             hover:border-white/12 transition-colors">
-              <p
-                className={`text-sm text-zinc-300 leading-relaxed whitespace-pre-line
-                            ${!descExpanded ? 'line-clamp-3' : ''}`}
-              >
+              <p className={`text-sm text-zinc-300 leading-relaxed whitespace-pre-line
+                             ${!descExpanded ? 'line-clamp-3' : ''}`}>
                 {video.description || 'No description provided.'}
               </p>
               {(video.description?.length ?? 0) > 150 && (
@@ -548,7 +577,6 @@ export default function WatchVideo() {
                       />
                     </div>
                   </Link>
-
                   <div className="flex-1">
                     <div className="flex items-end gap-2 bg-white/5 border border-white/10
                                     rounded-2xl px-4 py-3 focus-within:border-red-500/40
