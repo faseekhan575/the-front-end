@@ -1,136 +1,155 @@
-import { usePush } from './usePush'
-import { useState, useRef, useEffect } from 'react'
+import { usePush } from "./usePush"
+import { useState, useEffect } from "react"
+import { X, Bell } from "lucide-react"
 
 export default function NotificationBell() {
   const { isSubscribed, isLoading, subscribe, unsubscribe } = usePush()
-  const [showTooltip, setShowTooltip] = useState(false)
-  const tooltipRef = useRef(null)
+  const [showBar, setShowBar] = useState(false)
+
+  // Show the top bar once if user hasn't subscribed and hasn't dismissed it
+  useEffect(() => {
+    if (!('Notification' in window)) return
+    const dismissed = localStorage.getItem('notif_bar_dismissed')
+    if (!isSubscribed && !dismissed) {
+      setShowBar(true)
+    }
+  }, [isSubscribed])
+
+  // Hide bar once subscribed
+  useEffect(() => {
+    if (isSubscribed) setShowBar(false)
+  }, [isSubscribed])
+
+  const handleDismiss = () => {
+    setShowBar(false)
+    localStorage.setItem('notif_bar_dismissed', '1')
+  }
+
+  const handleSubscribeFromBar = async () => {
+    await subscribe()
+    setShowBar(false)
+  }
 
   if (!('Notification' in window)) return null
 
-  useEffect(() => {
-    if (!isSubscribed) {
-      const seen = localStorage.getItem('bell_tooltip_seen')
-      if (!seen) {
-        setShowTooltip(true)
-        localStorage.setItem('bell_tooltip_seen', '1')
-      }
-    }
-  }, [])
-
-  const handleClick = () => {
-    setShowTooltip(false)
-    isSubscribed ? unsubscribe() : subscribe()
-  }
-
   return (
-    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+    <>
+      {/* ── TOP NOTIFICATION BAR ── */}
+      {showBar && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            background: 'linear-gradient(90deg, #18181b 0%, #1c1c1f 100%)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            padding: '10px 16px',
+            boxShadow: '0 2px 24px rgba(0,0,0,0.5)',
+            animation: 'slideDown 0.3s ease both',
+          }}
+        >
+          <style>{`
+            @keyframes slideDown {
+              from { transform: translateY(-100%); opacity: 0; }
+              to   { transform: translateY(0);     opacity: 1; }
+            }
+          `}</style>
 
-      {/* Tooltip */}
-      {showTooltip && !isSubscribed && (
-        <div ref={tooltipRef} style={{
-          position: 'absolute',
-          top: '54px',
-          right: 0,
-          background: '#212121',
-          border: '0.5px solid #333',
-          borderRadius: '12px',
-          padding: '14px 16px',
-          width: '220px',
-          zIndex: 999,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        }}>
+          {/* Bell icon */}
           <div style={{
-            position: 'absolute', top: '-6px', right: '14px',
-            width: '10px', height: '10px', background: '#212121',
-            border: '0.5px solid #333', borderRight: 'none', borderBottom: 'none',
-            transform: 'rotate(45deg)',
-          }} />
-          <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginBottom: '6px' }}>
-            Enable notifications
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: 'rgba(239,68,68,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Bell size={14} color="#ef4444" />
           </div>
-          <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '12px', lineHeight: 1.5 }}>
-            Get notified when new videos are uploaded
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handleClick} style={{
-              flex: 1, background: '#ff0000', color: '#fff', border: 'none',
-              borderRadius: '6px', padding: '8px', fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-            }}>Allow</button>
-            <button onClick={() => setShowTooltip(false)} style={{
-              flex: 1, background: 'transparent', color: '#aaa',
-              border: '0.5px solid #444', borderRadius: '6px',
-              padding: '8px', fontSize: '12px', cursor: 'pointer',
-            }}>Later</button>
-          </div>
+
+          {/* Text */}
+          <p style={{
+            fontSize: '13px', color: '#d4d4d8', margin: 0,
+            fontWeight: 500, lineHeight: 1.4,
+          }}>
+            Stay updated —{' '}
+            <span style={{ color: '#a1a1aa' }}>
+              get notified when new videos drop.
+            </span>
+          </p>
+
+          {/* Enable button */}
+          <button
+            onClick={handleSubscribeFromBar}
+            disabled={isLoading}
+            style={{
+              flexShrink: 0,
+              background: '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: isLoading ? 'wait' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
+              transition: 'background 0.2s, transform 0.1s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#dc2626'}
+            onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            {isLoading ? '…' : 'Enable'}
+          </button>
+
+          {/* Dismiss X */}
+          <button
+            onClick={handleDismiss}
+            style={{
+              flexShrink: 0,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#52525b',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '4px',
+              borderRadius: '50%',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#a1a1aa'}
+            onMouseLeave={e => e.currentTarget.style.color = '#52525b'}
+            title="Dismiss"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
 
-      {/* Bell + X wrapper */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-
-        {/* Bell button */}
-        <button
-          onClick={!isSubscribed ? handleClick : undefined}
-          disabled={isLoading}
-          title={isSubscribed ? 'Notifications on' : 'Enable notifications'}
-          style={{
-            width: '40px', height: '40px', borderRadius: '50%',
-            background: isSubscribed ? 'rgba(255,255,255,0.1)' : 'transparent',
-            border: 'none',
-            cursor: isSubscribed ? 'default' : isLoading ? 'wait' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.2s',
-          }}
-          onMouseEnter={e => { if (!isSubscribed) e.currentTarget.style.background = '#1a1a1a' }}
-          onMouseLeave={e => { if (!isSubscribed) e.currentTarget.style.background = 'transparent' }}
-        >
-          {isLoading ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="#555" strokeWidth="2"
-              style={{ animation: 'bellSpin 1s linear infinite' }}>
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v6l4 2"/>
-            </svg>
-          ) : (
-            /* Bell icon — bright white when subscribed, dim when not */
-            <svg width="20" height="20" viewBox="0 0 24 24"
-              fill={isSubscribed ? '#fff' : 'none'}
-              stroke={isSubscribed ? '#fff' : '#666'}
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-          )}
-        </button>
-
-        {/* X button — only show when subscribed */}
-        {isSubscribed && !isLoading && (
-          <button
-            onClick={unsubscribe}
-            title="Turn off notifications"
-            style={{
-              width: '20px', height: '20px', borderRadius: '50%',
-              background: 'transparent', border: 'none',
-              cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              opacity: 0.5, transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        )}
-      </div>
-
-      <style>{`
-        @keyframes bellSpin { to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
+      {/* ── BELL BUTTON (unchanged) ── */}
+      <button
+        onClick={isSubscribed ? unsubscribe : subscribe}
+        disabled={isLoading}
+        title={isSubscribed ? 'Disable notifications' : 'Enable notifications'}
+        className="notification-bell-btn"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: isLoading ? 'wait' : 'pointer',
+          fontSize: '22px',
+          padding: '6px',
+          borderRadius: '50%',
+          transition: 'background 0.2s',
+          color: isSubscribed ? '#ff4444' : '#aaa',
+        }}
+      >
+        {isLoading ? '⏳' : isSubscribed ? '🔔' : '🔕'}
+      </button>
+    </>
   )
 }

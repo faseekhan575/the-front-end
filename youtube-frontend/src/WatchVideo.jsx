@@ -46,17 +46,14 @@ function WatchSkeleton() {
     <div className="max-w-7xl mx-auto px-4 animate-pulse">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-5">
-          {/* Video */}
           <div className="aspect-video bg-zinc-800 rounded-2xl overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent
                             -skew-x-12 animate-[shimmer_1.8s_infinite]" />
           </div>
-          {/* Title */}
           <div className="space-y-2">
             <div className="h-6 bg-zinc-800 rounded-xl w-5/6" />
             <div className="h-4 bg-zinc-800 rounded-xl w-3/6" />
           </div>
-          {/* Channel row */}
           <div className="flex items-center gap-3 py-4 border-y border-white/6">
             <div className="w-11 h-11 rounded-full bg-zinc-800 flex-shrink-0" />
             <div className="flex-1 space-y-2">
@@ -65,7 +62,6 @@ function WatchSkeleton() {
             </div>
             <div className="h-9 w-28 bg-zinc-800 rounded-xl" />
           </div>
-          {/* Comments */}
           <div className="space-y-5 pt-2">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex gap-3">
@@ -79,7 +75,6 @@ function WatchSkeleton() {
             ))}
           </div>
         </div>
-        {/* Sidebar */}
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex gap-3">
@@ -116,7 +111,6 @@ function CommentItem({ comment, currentUser }) {
 
   return (
     <div className="flex gap-3 group">
-      {/* Avatar */}
       <Link to={`/channel/${comment.owner?.username}`} className="flex-shrink-0 mt-0.5">
         <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-white/10
                         hover:ring-red-500/40 transition-all duration-200">
@@ -130,7 +124,6 @@ function CommentItem({ comment, currentUser }) {
       </Link>
 
       <div className="flex-1 min-w-0">
-        {/* Author + time */}
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <Link
             to={`/channel/${comment.owner?.username}`}
@@ -140,11 +133,7 @@ function CommentItem({ comment, currentUser }) {
           </Link>
           <span className="text-xs text-zinc-600">{timeAgo(comment.createdAt)}</span>
         </div>
-
-        {/* Content */}
         <p className="text-sm text-zinc-300 leading-relaxed break-words">{comment.content}</p>
-
-        {/* Actions */}
         <div className="flex items-center gap-4 mt-2.5">
           <button
             onClick={handleLike}
@@ -178,6 +167,12 @@ export default function WatchVideo() {
   const [copied,        setCopied]        = useState(false)
   const [showShare,     setShowShare]     = useState(false)
   const [subLoading,    setSubLoading]    = useState(false)
+
+  // ── iOS PWA fix ──
+  const [needsTap,      setNeedsTap]      = useState(false)
+  const videoRef    = useRef(null)
+  // ─────────────────
+
   const textareaRef = useRef(null)
   const shareRef    = useRef(null)
 
@@ -204,9 +199,23 @@ export default function WatchVideo() {
     }
   }, [video])
 
+  // ── iOS PWA: catch autoPlay block and show tap overlay ──
+  useEffect(() => {
+    const vid = videoRef.current
+    if (!vid || !video) return
+    setNeedsTap(false)
+    const promise = vid.play()
+    if (promise !== undefined) {
+      promise.catch(() => setNeedsTap(true))
+    }
+  }, [video])
+  // ────────────────────────────────────────────────────────
+
   // Close share dropdown on outside click
   useEffect(() => {
-    const handler = (e) => { if (shareRef.current && !shareRef.current.contains(e.target)) setShowShare(false) }
+    const handler = (e) => {
+      if (shareRef.current && !shareRef.current.contains(e.target)) setShowShare(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -217,7 +226,7 @@ export default function WatchVideo() {
     (sub) => String(sub.channel?._id) === String(video?.owner?._id)
   )
 
-  // ── Handlers (logic unchanged) ────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!user) return toast.error('Sign in to like videos')
     const wasLiked = liked
@@ -299,7 +308,6 @@ export default function WatchVideo() {
 
   return (
     <>
-      {/* Keyframes */}
       <style>{`
         @keyframes shimmer {
           0%   { transform: translateX(-100%) skewX(-12deg); }
@@ -319,18 +327,37 @@ export default function WatchVideo() {
           <div className="lg:col-span-2 min-w-0">
 
             {/* ── VIDEO PLAYER ── */}
-            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/70 ring-1 ring-white/8">
-             <video
-  src={video.videofile}
-  controls
-  autoPlay
-  playsInline
-  preload="metadata"
-  webkit-playsinline="true"
-  x-webkit-airplay="allow"
-  className="w-full h-full"
-  poster={video.thumbnail}
-/>
+            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/70 ring-1 ring-white/8 relative">
+              <video
+                ref={videoRef}
+                src={video.videofile}
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                webkit-playsinline="true"
+                x-webkit-airplay="allow"
+                className="w-full h-full"
+                poster={video.thumbnail}
+                onPlay={() => setNeedsTap(false)}
+              />
+
+              {/* iOS PWA tap-to-play overlay — only appears when autoPlay is blocked */}
+              {needsTap && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}
+                  onClick={() => {
+                    videoRef.current?.play()
+                    setNeedsTap(false)
+                  }}
+                >
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center border border-white/30"
+                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+                    <Play size={36} className="text-white ml-1" fill="white" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── TITLE ── */}
@@ -355,7 +382,6 @@ export default function WatchVideo() {
             <div className="flex items-center justify-between gap-3 flex-wrap
                             py-4 border-y border-white/8">
 
-              {/* Channel info */}
               <div className="flex items-center gap-3">
                 <Link to={`/channel/${video.owner?.username}`} className="flex-shrink-0">
                   <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/10
@@ -378,7 +404,6 @@ export default function WatchVideo() {
                   <p className="text-xs text-zinc-500 mt-0.5">@{video.owner?.username}</p>
                 </div>
 
-                {/* Subscribe / Own video */}
                 {!isOwnVideo ? (
                   <button
                     onClick={handleSubscribe}
@@ -405,10 +430,8 @@ export default function WatchVideo() {
                 )}
               </div>
 
-              {/* Action buttons */}
               <div className="flex items-center gap-2 flex-shrink-0">
 
-                {/* Like / Dislike pill */}
                 <div className="flex items-center bg-white/8 rounded-xl overflow-hidden border border-white/8">
                   <button
                     onClick={handleLike}
@@ -427,7 +450,6 @@ export default function WatchVideo() {
                   </button>
                 </div>
 
-                {/* Share */}
                 <div className="relative" ref={shareRef}>
                   <button
                     onClick={() => setShowShare(!showShare)}
@@ -501,8 +523,6 @@ export default function WatchVideo() {
 
             {/* ── COMMENTS ── */}
             <div className="mt-10">
-
-              {/* Header */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-white/6 rounded-xl flex items-center justify-center">
                   <MessageCircle size={16} className="text-zinc-400" />
@@ -515,7 +535,6 @@ export default function WatchVideo() {
                 </h2>
               </div>
 
-              {/* Comment input */}
               {user ? (
                 <form onSubmit={handleAddComment} className="flex gap-3 mb-8">
                   <Link to={`/channel/${user.username}`} className="flex-shrink-0 mt-0.5">
@@ -580,7 +599,6 @@ export default function WatchVideo() {
                 </div>
               )}
 
-              {/* Comment list */}
               <div className="space-y-6">
                 {comments.length === 0 ? (
                   <div className="flex flex-col items-center py-16 text-center">
@@ -611,8 +629,6 @@ export default function WatchVideo() {
               <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">
                 Up Next
               </h3>
-
-              {/* Placeholder — wire to related videos when available */}
               <div className="flex flex-col items-center justify-center py-16
                               border border-dashed border-white/10 rounded-2xl text-center">
                 <div className="w-14 h-14 bg-white/4 rounded-2xl flex items-center justify-center mb-3">
