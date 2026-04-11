@@ -320,13 +320,17 @@ export default function WatchVideo() {
 
             {/* ── VIDEO PLAYER ── */}
             <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/70 ring-1 ring-white/8">
-              <video
-                src={video.videofile}
-                controls
-                autoPlay
-                className="w-full h-full"
-                poster={video.thumbnail}
-              />
+             <video
+  src={video.videofile}
+  controls
+  autoPlay
+  playsInline
+  preload="metadata"
+  webkit-playsinline="true"
+  x-webkit-airplay="allow"
+  className="w-full h-full"
+  poster={video.thumbnail}
+/>
             </div>
 
             {/* ── TITLE ── */}
