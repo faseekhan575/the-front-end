@@ -26,24 +26,107 @@ import {
 import { Toaster } from 'sonner'
 import WelcomePopup from './Welcomepopup'
 
-// ─── Nav + Categories ─────────────────────────────────────────────────────────
+// ─── FaseehVision F Logo — pixel-perfect geometric SVG ───────────────────────
+// Matches the uploaded logo: black bg, bold white angular F with diagonal cuts
+function FLogo({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 90 105"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="white"
+      className={className}
+    >
+      {/*
+        Outer path traces the full F shape:
+        - Left vertical bar (x 0–18, full height 0–105)
+        - Top arm: spans full width to x=82, then diagonal cut down to x=60,y=22
+        - Returns along inner top edge to x=18, drops to middle arm level y=40
+        - Middle arm: goes to x=58, diagonal cut to x=36,y=62
+        - Returns to vertical bar, goes to bottom
+      */}
+      <path d="M 0,0 L 82,0 L 60,22 L 18,22 L 18,40 L 58,40 L 36,62 L 18,62 L 18,105 L 0,105 Z" />
+    </svg>
+  )
+}
+
+// ─── Nav Items with individual bright colors ──────────────────────────────────
 const NAV_ITEMS = [
-  { icon: Home,            label: 'Home',          path: '/'              },
-  { icon: Users,           label: 'Subscriptions', path: '/subscriptions' },
-  { icon: ThumbsUp,        label: 'Liked Videos',  path: '/liked'         },
-  { icon: History,         label: 'History',       path: '/history'       },
-  { icon: Library,         label: 'Playlists',     path: '/playlists'     },
-  { icon: LayoutDashboard, label: 'Dashboard',     path: '/dashboard'     },
+  {
+    icon: Home,
+    label: 'Home',
+    path: '/',
+    color: 'text-sky-400',
+    activeBg: 'bg-sky-500/15',
+    activeBar: 'bg-sky-400',
+    activeDot: 'bg-sky-400',
+    hoverColor: 'hover:text-sky-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(56,189,248,0.85)]',
+  },
+  {
+    icon: Users,
+    label: 'Subscriptions',
+    path: '/subscriptions',
+    color: 'text-violet-400',
+    activeBg: 'bg-violet-500/15',
+    activeBar: 'bg-violet-400',
+    activeDot: 'bg-violet-400',
+    hoverColor: 'hover:text-violet-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(167,139,250,0.85)]',
+  },
+  {
+    icon: ThumbsUp,
+    label: 'Liked Videos',
+    path: '/liked',
+    color: 'text-pink-400',
+    activeBg: 'bg-pink-500/15',
+    activeBar: 'bg-pink-400',
+    activeDot: 'bg-pink-400',
+    hoverColor: 'hover:text-pink-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(244,114,182,0.85)]',
+  },
+  {
+    icon: History,
+    label: 'History',
+    path: '/history',
+    color: 'text-amber-400',
+    activeBg: 'bg-amber-500/15',
+    activeBar: 'bg-amber-400',
+    activeDot: 'bg-amber-400',
+    hoverColor: 'hover:text-amber-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(251,191,36,0.85)]',
+  },
+  {
+    icon: Library,
+    label: 'Playlists',
+    path: '/playlists',
+    color: 'text-emerald-400',
+    activeBg: 'bg-emerald-500/15',
+    activeBar: 'bg-emerald-400',
+    activeDot: 'bg-emerald-400',
+    hoverColor: 'hover:text-emerald-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(52,211,153,0.85)]',
+  },
+  {
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+    path: '/dashboard',
+    color: 'text-orange-400',
+    activeBg: 'bg-orange-500/15',
+    activeBar: 'bg-orange-400',
+    activeDot: 'bg-orange-400',
+    hoverColor: 'hover:text-orange-300',
+    glow: 'drop-shadow-[0_0_7px_rgba(251,146,60,0.85)]',
+  },
 ]
 
 const CATEGORIES = [
-  { icon: Flame,     label: 'Trending'   },
-  { icon: TrendingUp,label: 'New'        },
-  { icon: Gamepad2,  label: 'Gaming'     },
-  { icon: Mic2,      label: 'Music'      },
-  { icon: Tv2,       label: 'Live'       },
-  { icon: BookOpen,  label: 'Education'  },
-  { icon: Zap,       label: 'Shorts'     },
+  { icon: Flame,      label: 'Trending'  },
+  { icon: TrendingUp, label: 'New'       },
+  { icon: Gamepad2,   label: 'Gaming'    },
+  { icon: Mic2,       label: 'Music'     },
+  { icon: Tv2,        label: 'Live'      },
+  { icon: BookOpen,   label: 'Education' },
+  { icon: Zap,        label: 'Shorts'    },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -54,7 +137,7 @@ const fmtCount = (n) => {
   return String(n)
 }
 
-// ─── Status Toast (used inside modal) ────────────────────────────────────────
+// ─── Status Toast ─────────────────────────────────────────────────────────────
 function StatusToast({ status, onClose }) {
   if (!status) return null
   return (
@@ -193,37 +276,26 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" onClick={onClose} />
-
-      {/* Card */}
       <div className="relative w-full max-w-xl bg-[#0f0f0f] border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,.95)] flex flex-col max-h-[92vh]">
 
-        {/* ── Cover banner ── */}
         <div className="h-28 relative overflow-hidden flex-shrink-0 bg-gradient-to-br from-zinc-900 to-zinc-950">
-          <img
-            src={coverPreview || currentUser?.coverImages || ''}
-            alt="cover"
+          <img src={coverPreview || currentUser?.coverImages || ''} alt="cover"
             className="w-full h-full object-cover opacity-70"
-            onError={(e) => { e.target.style.display = 'none' }}
-          />
+            onError={(e) => { e.target.style.display = 'none' }} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#0f0f0f]" />
           <div className="absolute -top-6 -right-6 w-32 h-32 bg-red-600/25 rounded-full blur-3xl" />
           <div className="absolute -bottom-4 left-12 w-20 h-20 bg-red-500/15 rounded-full blur-2xl" />
         </div>
 
-        {/* ── Avatar row ── */}
         <div className="px-7 -mt-11 flex items-end justify-between relative z-10 flex-shrink-0">
           <div className="relative group">
             <div
               className="w-[4.5rem] h-[4.5rem] rounded-[1.25rem] overflow-hidden ring-4 ring-[#0f0f0f] shadow-2xl cursor-pointer"
               onClick={() => { setActiveTab('avatar'); setTimeout(() => avatarInputRef.current?.click(), 80) }}
             >
-              <img
-                src={avatarPreview || currentUser?.avatar || '/default-avatar.png'}
-                alt="avatar"
-                className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-70 group-hover:scale-110"
-              />
+              <img src={avatarPreview || currentUser?.avatar || '/default-avatar.png'} alt="avatar"
+                className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-70 group-hover:scale-110" />
             </div>
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all pointer-events-none rounded-[1.25rem]">
               <Camera size={20} className="text-white drop-shadow-lg" />
@@ -235,26 +307,19 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
               <Pencil size={11} />
             </button>
           </div>
-          <button
-            onClick={onClose}
-            className="mb-1.5 p-2 bg-white/8 hover:bg-white/15 border border-white/10 rounded-2xl transition-colors"
-          >
+          <button onClick={onClose} className="mb-1.5 p-2 bg-white/8 hover:bg-white/15 border border-white/10 rounded-2xl transition-colors">
             <X size={17} />
           </button>
         </div>
 
-        {/* ── Title ── */}
         <div className="px-7 pt-3.5 pb-0 flex-shrink-0">
           <h2 className="text-[1.35rem] font-bold tracking-tight">Edit Profile</h2>
           <p className="text-zinc-500 text-sm mt-0.5">@{currentUser?.username}</p>
         </div>
 
-        {/* ── Tabs ── */}
         <div className="flex mt-5 px-7 border-b border-white/8 flex-shrink-0 overflow-x-auto scrollbar-hide gap-0.5">
           {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => { setActiveTab(id); setStatus(null) }}
+            <button key={id} onClick={() => { setActiveTab(id); setStatus(null) }}
               className={`flex items-center gap-1.5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider rounded-t-xl whitespace-nowrap flex-shrink-0 transition-all
                 ${activeTab === id
                   ? 'text-white border-b-2 border-red-500 bg-white/5 -mb-px'
@@ -265,56 +330,42 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
           ))}
         </div>
 
-        {/* ── Scrollable content ── */}
         <div className="px-7 py-6 overflow-y-auto flex-1 scrollbar-hide">
           <StatusToast status={status} onClose={() => setStatus(null)} />
 
-          {/* INFO TAB */}
           {activeTab === 'info' && (
             <div className="space-y-4">
               {[
-                { label: 'Full Name', value: fullname, setter: setFullname, icon: UserIcon, placeholder: 'Your full name',   type: 'text'  },
-                { label: 'Username',  value: username, setter: setUsername, icon: AtSign,   placeholder: 'your_username',   type: 'text'  },
+                { label: 'Full Name', value: fullname, setter: setFullname, icon: UserIcon, placeholder: 'Your full name',  type: 'text'  },
+                { label: 'Username',  value: username, setter: setUsername, icon: AtSign,   placeholder: 'your_username',  type: 'text'  },
                 { label: 'Email',     value: email,    setter: setEmail,    icon: Mail,     placeholder: 'your@email.com', type: 'email' },
               ].map(({ label, value, setter, icon: Icon, placeholder, type }) => (
                 <div key={label}>
                   <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">{label}</label>
                   <div className="flex items-center bg-white/4 border border-white/8 focus-within:border-red-500/50 focus-within:bg-white/6 rounded-2xl px-4 py-3.5 gap-3 transition-all">
                     <Icon size={14} className="text-zinc-600 flex-shrink-0" />
-                    <input
-                      type={type} value={value}
-                      onChange={(e) => setter(e.target.value)}
-                      placeholder={placeholder}
-                      className="flex-1 bg-transparent outline-none text-sm placeholder-zinc-700 text-white"
-                    />
+                    <input type={type} value={value} onChange={(e) => setter(e.target.value)} placeholder={placeholder}
+                      className="flex-1 bg-transparent outline-none text-sm placeholder-zinc-700 text-white" />
                   </div>
                 </div>
               ))}
-              <button
-                onClick={handleUpdateInfo} disabled={busy}
-                className="w-full py-3.5 mt-1 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
+              <button onClick={handleUpdateInfo} disabled={busy}
+                className="w-full py-3.5 mt-1 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                 {updatingAccount ? <><Loader2 size={15} className="animate-spin" />Saving…</> : <><CheckCircle size={15} />Save Changes</>}
               </button>
             </div>
           )}
 
-          {/* AVATAR TAB */}
           {activeTab === 'avatar' && (
             <div className="space-y-5">
               <div className="flex flex-col items-center gap-5">
                 <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
                   <div className="w-36 h-36 rounded-[2rem] overflow-hidden ring-4 ring-white/8 shadow-2xl">
-                    <img
-                      src={avatarPreview || currentUser?.avatar || '/default-avatar.png'}
-                      alt="preview"
-                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-60"
-                    />
+                    <img src={avatarPreview || currentUser?.avatar || '/default-avatar.png'} alt="preview"
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-60" />
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                    <div className="bg-black/50 backdrop-blur-md rounded-[1.5rem] p-3.5">
-                      <Camera size={26} className="text-white" />
-                    </div>
+                    <div className="bg-black/50 backdrop-blur-md rounded-[1.5rem] p-3.5"><Camera size={26} className="text-white" /></div>
                   </div>
                 </div>
                 <input type="file" accept="image/*" ref={avatarInputRef}
@@ -323,10 +374,8 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
                   <p className="text-sm font-semibold text-zinc-300">Upload a new profile picture</p>
                   <p className="text-xs text-zinc-600 mt-1">JPG, PNG, GIF — max 10 MB</p>
                 </div>
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-white/6 hover:bg-white/12 border border-white/10 hover:border-white/20 rounded-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-                >
+                <button onClick={() => avatarInputRef.current?.click()}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-white/6 hover:bg-white/12 border border-white/10 hover:border-white/20 rounded-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95">
                   <Upload size={15} />Choose Image
                 </button>
               </div>
@@ -337,28 +386,20 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
                   <button onClick={() => { setAvatarFile(null); setAvatarPreview(null) }} className="text-zinc-600 hover:text-white"><X size={14} /></button>
                 </div>
               )}
-              <button
-                onClick={handleUpdateAvatar} disabled={!avatarFile || busy}
-                className="w-full py-3.5 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
+              <button onClick={handleUpdateAvatar} disabled={!avatarFile || busy}
+                className="w-full py-3.5 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                 {updatingAvatar ? <><Loader2 size={15} className="animate-spin" />Uploading…</> : <><Upload size={15} />Upload Avatar</>}
               </button>
             </div>
           )}
 
-          {/* COVER TAB */}
           {activeTab === 'cover' && (
             <div className="space-y-5">
-              <div
-                onClick={() => coverInputRef.current?.click()}
-                className="relative w-full h-44 bg-white/4 border-2 border-dashed border-white/10 hover:border-red-500/40 rounded-3xl overflow-hidden cursor-pointer transition-all group"
-              >
+              <div onClick={() => coverInputRef.current?.click()}
+                className="relative w-full h-44 bg-white/4 border-2 border-dashed border-white/10 hover:border-red-500/40 rounded-3xl overflow-hidden cursor-pointer transition-all group">
                 {(coverPreview || currentUser?.coverImages) && (
-                  <img
-                    src={coverPreview || currentUser?.coverImages}
-                    alt="Cover preview"
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:brightness-50 group-hover:scale-105"
-                  />
+                  <img src={coverPreview || currentUser?.coverImages} alt="Cover preview"
+                    className="w-full h-full object-cover transition-all duration-500 group-hover:brightness-50 group-hover:scale-105" />
                 )}
                 <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 transition-all duration-300
                   ${(coverPreview || currentUser?.coverImages) ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
@@ -376,16 +417,13 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
                   <button onClick={() => { setCoverFile(null); setCoverPreview(null) }} className="text-zinc-600 hover:text-white"><X size={14} /></button>
                 </div>
               )}
-              <button
-                onClick={handleUpdateCover} disabled={!coverFile || busy}
-                className="w-full py-3.5 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
+              <button onClick={handleUpdateCover} disabled={!coverFile || busy}
+                className="w-full py-3.5 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                 {updatingCover ? <><Loader2 size={15} className="animate-spin" />Uploading…</> : <><Upload size={15} />Upload Cover</>}
               </button>
             </div>
           )}
 
-          {/* PASSWORD TAB */}
           {activeTab === 'password' && (
             <div className="space-y-4">
               <div className="bg-amber-500/8 border border-amber-500/20 rounded-2xl px-4 py-3 flex items-start gap-3">
@@ -401,27 +439,21 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
                   <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">{label}</label>
                   <div className="flex items-center bg-white/4 border border-white/8 focus-within:border-red-500/50 rounded-2xl px-4 py-3.5 gap-3 transition-all">
                     <KeyRound size={14} className="text-zinc-600 flex-shrink-0" />
-                    <input
-                      type={showPasswords ? 'text' : 'password'}
-                      value={value} onChange={(e) => setter(e.target.value)} placeholder={ph}
-                      className="flex-1 bg-transparent outline-none text-sm placeholder-zinc-700 text-white"
-                    />
+                    <input type={showPasswords ? 'text' : 'password'} value={value}
+                      onChange={(e) => setter(e.target.value)} placeholder={ph}
+                      className="flex-1 bg-transparent outline-none text-sm placeholder-zinc-700 text-white" />
                   </div>
                 </div>
               ))}
               <label className="flex items-center gap-3 cursor-pointer select-none">
-                <div
-                  onClick={() => setShowPasswords(!showPasswords)}
-                  className={`w-10 h-6 rounded-full relative transition-colors duration-300 flex-shrink-0 ${showPasswords ? 'bg-red-600' : 'bg-white/15'}`}
-                >
+                <div onClick={() => setShowPasswords(!showPasswords)}
+                  className={`w-10 h-6 rounded-full relative transition-colors duration-300 flex-shrink-0 ${showPasswords ? 'bg-red-600' : 'bg-white/15'}`}>
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${showPasswords ? 'left-5' : 'left-1'}`} />
                 </div>
                 <span className="text-sm text-zinc-500">Show passwords</span>
               </label>
-              <button
-                onClick={handleChangePassword} disabled={busy}
-                className="w-full py-3.5 mt-1 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-              >
+              <button onClick={handleChangePassword} disabled={busy}
+                className="w-full py-3.5 mt-1 bg-red-600 hover:bg-red-500 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                 {changingPassword ? <><Loader2 size={15} className="animate-spin" />Changing…</> : <><Shield size={15} />Change Password</>}
               </button>
             </div>
@@ -434,16 +466,16 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
 
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 export default function RootLayout() {
-  const [sidebarOpen,     setSidebarOpen]     = useState(false)
-  const [searchQuery,     setSearchQuery]     = useState('')
-  const [searchFocused,   setSearchFocused]   = useState(false)
-  const [profileOpen,     setProfileOpen]     = useState(false)
-  const [profileModalOpen,setProfileModalOpen]= useState(false)
+  const [sidebarOpen,      setSidebarOpen]      = useState(false)
+  const [searchQuery,      setSearchQuery]      = useState('')
+  const [searchFocused,    setSearchFocused]    = useState(false)
+  const [profileOpen,      setProfileOpen]      = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const profileRef = useRef(null)
 
-  const navigate = useNavigate()
-  const location = useLocation()
-  const dispatch = useDispatch()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const dispatch  = useDispatch()
 
   const { user, isAuthenticated } = useSelector((state) => state.auth)
 
@@ -509,9 +541,11 @@ export default function RootLayout() {
         style: { background: '#161616', color: '#fff', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px' }
       }} />
 
+      {/* ─────────────────────── HEADER ─────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 h-[3.75rem] bg-[#080808]/95 backdrop-blur-2xl border-b border-white/[.06]">
         <div className="flex items-center justify-between h-full px-4 gap-4">
 
+          {/* Left: hamburger + logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -519,16 +553,36 @@ export default function RootLayout() {
             >
               <Menu size={20} />
             </button>
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-rose-700 rounded-[10px] flex items-center justify-center shadow-lg shadow-red-900/50 group-hover:shadow-red-900/70 transition-shadow">
-                <PlayCircle size={18} className="text-white" fill="white" />
-              </div>
-              <span className="text-lg font-extrabold tracking-tight hidden sm:block">
-                Faseeh<span className="text-red-500">Vision</span>
-              </span>
-            </Link>
+
+           <Link to="/" className="flex items-center gap-2.5 group">
+  {/* ── F Logo from public folder ── */}
+  <div className="
+    w-11 h-11
+    sm:w-13 sm:h-13
+    rounded-[12px]
+    flex items-center justify-center
+    flex-shrink-0
+    overflow-hidden
+    group-hover:scale-105
+    transition-all duration-200
+  "
+  style={{ background: 'transparent' }}
+  >
+    <img
+      src="/f-logo2.jpeg"
+      alt="FaseehVision Logo"
+      className="w-full h-full object-contain"
+      style={{ mixBlendMode: 'screen' }}
+    />
+  </div>
+
+  <span className="text-lg font-extrabold tracking-tight hidden sm:block">
+    Faseeh<span className="text-red-500">Vision</span>
+  </span>
+</Link>
           </div>
 
+          {/* Center: search bar */}
           <form onSubmit={handleSearch} className="flex-1 max-w-lg hidden md:block">
             <div className={`relative flex items-center transition-all duration-200 ${searchFocused ? 'scale-[1.015]' : ''}`}>
               <Search size={15} className="absolute left-4 text-zinc-500 pointer-events-none" />
@@ -541,15 +595,14 @@ export default function RootLayout() {
                 className="w-full bg-white/[.05] border border-white/[.08] rounded-2xl py-2.5 pl-10 pr-10 text-sm placeholder-zinc-600
                            focus:outline-none focus:border-red-500/40 focus:bg-white/[.07] transition-all"
               />
-              <button
-                type="submit"
-                className="absolute right-1.5 w-7 h-7 bg-white/8 hover:bg-red-600 rounded-xl flex items-center justify-center transition-colors"
-              >
+              <button type="submit"
+                className="absolute right-1.5 w-7 h-7 bg-white/8 hover:bg-red-600 rounded-xl flex items-center justify-center transition-colors">
                 <Search size={14} />
               </button>
             </div>
           </form>
 
+          {/* Right: actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={() => {
@@ -563,16 +616,10 @@ export default function RootLayout() {
 
             {isAuthenticated && (
               <>
-                <Link
-                  to="/upload"
-                  className="hidden sm:flex items-center gap-1.5 bg-red-600 hover:bg-red-500 active:scale-95 px-3.5 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-950/50"
-                >
+                <Link to="/upload"
+                  className="hidden sm:flex items-center gap-1.5 bg-red-600 hover:bg-red-500 active:scale-95 px-3.5 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-950/50">
                   <Upload size={15} /> Upload
                 </Link>
-                {/* <button className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/8 transition-colors">
-                  <Bell size={18} />
-                  <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full" />
-                </button> */}
                 <NotificationBell />
               </>
             )}
@@ -603,41 +650,28 @@ export default function RootLayout() {
                   <div className="absolute right-0 top-full mt-2 w-[17rem] bg-[#111111] border border-white/[.08] rounded-[1.4rem] shadow-[0_24px_72px_rgba(0,0,0,.85)] overflow-hidden z-50">
 
                     <div className="h-[3.5rem] relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
-                      <img
-                        src={currentUser?.coverImages || user?.coverImages || ''}
-                        alt="cover"
+                      <img src={currentUser?.coverImages || user?.coverImages || ''} alt="cover"
                         className="w-full h-full object-cover opacity-60"
-                        onError={(e) => { e.target.style.display = 'none' }}
-                      />
+                        onError={(e) => { e.target.style.display = 'none' }} />
                       <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-[#111111]" />
                       <div className="absolute inset-0 bg-gradient-to-br from-red-900/15 to-transparent" />
                     </div>
 
                     <div className="px-4 -mt-7 flex items-end justify-between">
                       <div className="relative group">
-                        <div
-                          className="w-[3.25rem] h-[3.25rem] rounded-2xl overflow-hidden ring-[3px] ring-[#111111] border border-white/15 cursor-pointer shadow-xl"
-                          onClick={openModal}
-                        >
-                          <img
-                            src={currentUser?.avatar || user?.avatar || '/default-avatar.png'}
-                            alt={user.username}
-                            className="w-full h-full object-cover group-hover:brightness-70 transition-all"
-                          />
+                        <div className="w-[3.25rem] h-[3.25rem] rounded-2xl overflow-hidden ring-[3px] ring-[#111111] border border-white/15 cursor-pointer shadow-xl"
+                          onClick={openModal}>
+                          <img src={currentUser?.avatar || user?.avatar || '/default-avatar.png'} alt={user.username}
+                            className="w-full h-full object-cover group-hover:brightness-70 transition-all" />
                         </div>
-                        <button
-                          onClick={openModal}
+                        <button onClick={openModal}
                           className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95"
-                          title="Edit profile"
-                        >
+                          title="Edit profile">
                           <Pencil size={9} />
                         </button>
                       </div>
-
-                      <button
-                        onClick={openModal}
-                        className="mb-1 flex items-center gap-1.5 px-3 py-1.5 bg-white/6 hover:bg-white/12 border border-white/10 hover:border-red-500/30 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
-                      >
+                      <button onClick={openModal}
+                        className="mb-1 flex items-center gap-1.5 px-3 py-1.5 bg-white/6 hover:bg-white/12 border border-white/10 hover:border-red-500/30 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95">
                         <Pencil size={10} />Edit Profile
                       </button>
                     </div>
@@ -645,7 +679,6 @@ export default function RootLayout() {
                     <div className="px-4 pt-2.5 pb-4 border-b border-white/[.06]">
                       <p className="font-bold text-[15px] leading-tight truncate">{currentUser?.fullname || user.fullname}</p>
                       <p className="text-xs text-zinc-500 mt-0.5 truncate">@{currentUser?.username || user.username}</p>
-
                       <div className="flex items-stretch gap-2 mt-3">
                         <div className="flex-1 bg-blue-600/10 border border-blue-500/15 rounded-xl px-2.5 py-2 flex flex-col items-center gap-0.5">
                           <span className="text-sm font-black text-blue-400 leading-none">{fmtCount(chanStats?.subcriberscount)}</span>
@@ -664,9 +697,9 @@ export default function RootLayout() {
 
                     <div className="p-1.5">
                       {[
-                        { to: `/channel/${user.username}`, icon: UserIcon,       color: 'blue',   label: 'My Channel'    },
-                        { to: '/dashboard',                icon: LayoutDashboard, color: 'purple', label: 'Dashboard'     },
-                        { to: '/upload',                   icon: Upload,          color: 'green',  label: 'Upload Video'  },
+                        { to: `/channel/${user.username}`, icon: UserIcon,        color: 'blue',   label: 'My Channel'   },
+                        { to: '/dashboard',                icon: LayoutDashboard, color: 'purple', label: 'Dashboard'    },
+                        { to: '/upload',                   icon: Upload,          color: 'green',  label: 'Upload Video' },
                       ].map(({ to, icon: Icon, color, label }) => (
                         <Link key={to} to={to} onClick={() => setProfileOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/6 transition-colors text-sm text-zinc-300 hover:text-white">
@@ -707,7 +740,7 @@ export default function RootLayout() {
         </div>
       </header>
 
-      {/* SIDEBAR */}
+      {/* ─────────────────────── SIDEBAR ─────────────────────── */}
       <>
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/70 z-40 md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
@@ -721,28 +754,41 @@ export default function RootLayout() {
         `}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 scrollbar-hide">
             <nav className="space-y-0.5">
-              {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
+              {NAV_ITEMS.map(({ icon: Icon, label, path, color, activeBg, activeBar, activeDot, hoverColor, glow }) => {
                 const active = isActive(path)
                 return (
                   <Link
                     key={path} to={path}
                     onClick={() => setSidebarOpen(false)}
                     title={!sidebarOpen ? label : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative
+                    className={`
+                      flex items-center gap-3 px-3 py-2.5 rounded-xl
+                      transition-all duration-150 group relative
                       ${active
-                        ? 'bg-red-600/12 text-red-400'
-                        : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-200'
-                      }`}
+                        ? `${activeBg} ${color} font-bold`
+                        : `text-zinc-500 hover:bg-white/5 ${hoverColor} font-semibold`
+                      }
+                    `}
                   >
+                    {/* Colored active left bar */}
                     {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-red-500 rounded-full" />
+                      <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 ${activeBar} rounded-full`} />
                     )}
-                    <Icon size={19} className="flex-shrink-0" />
-                    <span className={`text-sm font-semibold whitespace-nowrap transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+
+                    {/* Icon with glow when active */}
+                    <Icon
+                      size={20}
+                      className={`flex-shrink-0 transition-all duration-200 ${active ? glow : ''}`}
+                    />
+
+                    {/* Label */}
+                    <span className={`text-sm whitespace-nowrap transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
                       {label}
                     </span>
+
+                    {/* Active trailing dot */}
                     {active && sidebarOpen && (
-                      <span className="ml-auto w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
+                      <span className={`ml-auto w-1.5 h-1.5 ${activeDot} rounded-full flex-shrink-0 shadow-lg`} />
                     )}
                   </Link>
                 )
@@ -774,11 +820,9 @@ export default function RootLayout() {
                     alt={user.username}
                     className="w-9 h-9 rounded-xl object-cover border border-white/10"
                   />
-                  <button
-                    onClick={openModal}
-                    className="absolute -bottom-1 -right-1 w-4.5 h-4.5 w-[1.1rem] h-[1.1rem] bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110"
-                    title="Edit profile"
-                  >
+                  <button onClick={openModal}
+                    className="absolute -bottom-1 -right-1 w-[1.1rem] h-[1.1rem] bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110"
+                    title="Edit profile">
                     <Pencil size={8} />
                   </button>
                 </div>
@@ -787,11 +831,8 @@ export default function RootLayout() {
                   <p className="text-[10px] text-zinc-600 truncate mt-0.5">@{currentUser?.username || user.username}</p>
                 </div>
               </div>
-              <Link
-                to="/upload"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[.98] shadow-lg shadow-red-950/50"
-              >
+              <Link to="/upload" onClick={() => setSidebarOpen(false)}
+                className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[.98] shadow-lg shadow-red-950/50">
                 <Upload size={15} /> Upload Video
               </Link>
             </div>
@@ -799,11 +840,13 @@ export default function RootLayout() {
         </aside>
       </>
 
+      {/* ─────────────────────── MAIN ─────────────────────── */}
       <main className={`pt-[3.75rem] transition-all duration-300 ${sidebarOpen ? 'md:ml-60' : 'md:ml-[68px]'}`}>
         <div className="p-4 md:p-6 min-h-[calc(100vh-3.75rem)]">
           <Outlet />
         </div>
       </main>
+
       <InstallBanner />
     </div>
   )

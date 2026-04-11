@@ -24,19 +24,19 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/pwa-192x192.png',   // ✅ PNG, 192px
+            src: '/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-512x512.png',   // ✅ PNG, 512px
+            src: '/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-512x512-maskable.png',  // ✅ maskable separate
+            src: '/pwa-512x512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -46,6 +46,8 @@ export default defineConfig({
 
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globIgnores: ['**/*.mp4', '**/*.webm'], // ✅ never precache videos
+        navigateFallback: null,                 // ✅ prevents stale page caching
       },
     }),
   ],

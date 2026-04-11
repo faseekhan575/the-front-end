@@ -1,13 +1,30 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 
-// Precache all assets injected by Vite PWA
+// Precache all assets injected by Vite PWA (JS, CSS, HTML shell)
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
-// ✅ FETCH HANDLER — required for Chrome A2HS install prompt
+// ── FETCH HANDLER ──────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url
+
+  // ✅ Never intercept Cloudinary — browser handles video streaming natively
+  if (url.includes('cloudinary.com')) return
+
+  // ✅ Never cache API calls — always needs live internet
+  if (url.includes('/api/')) return
+
+  // ✅ App shell (HTML, JS, CSS, icons) — serve from cache when offline
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached
+      return fetch(event.request).catch(() => {
+        // If offline and no cache — return cached index.html so app shell loads
+        if (event.request.destination === 'document') {
+          return caches.match('/index.html')
+        }
+      })
+    })
   )
 })
 

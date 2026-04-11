@@ -10,27 +10,29 @@ export default function InstallBanner() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      background: '#272727',
-      color: '#fff',
-      padding: '14px 20px',
-      borderRadius: '12px',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      background: '#181818',
+      borderTop: '0.5px solid #333',
+      padding: '16px 20px 24px',
+      zIndex: 9999,
       display: 'flex',
       alignItems: 'center',
       gap: '14px',
-      zIndex: 9999,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-      maxWidth: '360px',
-      width: '90%',
     }}>
-      <img src="/icons/icon-192x192.png" width={40} height={40}
-        style={{ borderRadius: '8px' }} alt="app icon" />
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: '14px' }}>Add to Home Screen</div>
-        <div style={{ fontSize: '12px', color: '#aaa' }}>
-          Get push notifications & faster access
+      <img
+        src="/pwa-192x192.png"
+        width={48} height={48}
+        style={{ borderRadius: '12px', flexShrink: 0 }}
+        alt="app icon"
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 500, fontSize: '15px', color: '#fff', marginBottom: '2px' }}>
+          FaseehVision
+        </div>
+        <div style={{ fontSize: '13px', color: '#aaa' }}>
+          Install for faster access & notifications
         </div>
       </div>
       <button
@@ -40,20 +42,29 @@ export default function InstallBanner() {
           color: '#fff',
           border: 'none',
           borderRadius: '8px',
-          padding: '8px 14px',
+          padding: '10px 18px',
+          fontWeight: 500,
+          fontSize: '14px',
           cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: '13px',
+          flexShrink: 0,
         }}
       >
         Install
       </button>
       <button
         onClick={() => setDismissed(true)}
-        style={{ background: 'none', border: 'none', color: '#aaa',
-          cursor: 'pointer', fontSize: '18px', padding: '0 4px' }}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: '#666',
+          cursor: 'pointer',
+          fontSize: '22px',
+          lineHeight: 1,
+          padding: '4px',
+          flexShrink: 0,
+        }}
       >
-        ✕
+        ×
       </button>
     </div>
   )
