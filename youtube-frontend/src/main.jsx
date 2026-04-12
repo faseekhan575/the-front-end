@@ -4,10 +4,9 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { store } from './store'
-import { loadUserFromStorage } from './authSlice' // ✅ FIX: import action
+import { loadUserFromStorage } from './authSlice'
 import './index.css'
 
-// Layouts & Pages
 import RootLayout from './RootLayout'
 import Home from './Home'
 import Login from './Login'
@@ -22,9 +21,8 @@ import History from './History'
 import Subscriptions from './Subscriptions'
 import SearchResults from './SearchResults'
 import ProtectedRoute from './ProtectedRoute'
+import GoogleCallback from './GoogleCallback'
 
-// ✅ FIX: Load token from localStorage into Redux BEFORE app renders
-// Without this, every page refresh loses the token and all API calls return 401
 store.dispatch(loadUserFromStorage())
 
 const router = createBrowserRouter([
@@ -35,32 +33,15 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
+      { path: 'google-callback', element: <GoogleCallback /> },  // ✅ NEW
       { path: 'watch/:videoId', element: <WatchVideo /> },
       { path: 'channel/:username', element: <Channel /> },
-      {
-        path: 'upload',
-        element: <ProtectedRoute><UploadVideo /></ProtectedRoute>
-      },
-      {
-        path: 'dashboard',
-        element: <ProtectedRoute><Dashboard /></ProtectedRoute>
-      },
-      {
-        path: 'playlists',
-        element: <ProtectedRoute><Playlists /></ProtectedRoute>
-      },
-      {
-        path: 'liked',
-        element: <ProtectedRoute><LikedVideos /></ProtectedRoute>
-      },
-      {
-        path: 'history',
-        element: <ProtectedRoute><History /></ProtectedRoute>
-      },
-      {
-        path: 'subscriptions',
-        element: <ProtectedRoute><Subscriptions /></ProtectedRoute>
-      },
+      { path: 'upload', element: <ProtectedRoute><UploadVideo /></ProtectedRoute> },
+      { path: 'dashboard', element: <ProtectedRoute><Dashboard /></ProtectedRoute> },
+      { path: 'playlists', element: <ProtectedRoute><Playlists /></ProtectedRoute> },
+      { path: 'liked', element: <ProtectedRoute><LikedVideos /></ProtectedRoute> },
+      { path: 'history', element: <ProtectedRoute><History /></ProtectedRoute> },
+      { path: 'subscriptions', element: <ProtectedRoute><Subscriptions /></ProtectedRoute> },
       { path: 'search', element: <SearchResults /> },
     ]
   }
