@@ -1,45 +1,42 @@
-// src/authSlice.js
-import { createSlice } from '@reduxjs/toolkit'
+useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        console.log("Fetching current user...");
+        
+        const res = await fetch(
+          'https://node-chai-production.up.railway.app/api/v1/user/current-user',
+          {
+            method: 'GET',
+            credentials: 'include',
+          }
+        )
 
-const initialState = {
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
-}
+        console.log("Response status:", res.status);
+        
+        const data = await res.json()
+        console.log("Response data:", data);
 
-const authSlice = createSlice({
-  name: 'auth',
-  initialState,
-  reducers: {
-    setCredentials: (state, action) => {
-      state.user = action.payload.user
-      state.accessToken = action.payload.accessToken
-      state.isAuthenticated = true
-      localStorage.setItem('accessToken', action.payload.accessToken)
-      localStorage.setItem('user', JSON.stringify(action.payload.user))
-    },
-    setUser: (state, action) => {
-      state.user = action.payload
-      state.isAuthenticated = true
-    },
-    logout: (state) => {
-      state.user = null
-      state.accessToken = null
-      state.isAuthenticated = false
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('user')
-    },
-    loadUserFromStorage: (state) => {
-      const token = localStorage.getItem('accessToken')
-      const user = localStorage.getItem('user')
-      if (token && user) {
-        state.accessToken = token
-        state.user = JSON.parse(user)
-        state.isAuthenticated = true
+        if (!res.ok) throw new Error(data.message)
+
+        const user = data.data
+
+        dispatch(setCredentials({
+          user: {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            fullname: user.fullname,
+          },
+          accessToken: null,
+        }))
+
+        navigate('/', { replace: true })
+
+      } catch (error) {
+        console.error("Google callback error:", error)
+        navigate('/login', { replace: true })
       }
     }
-  },
-})
 
-export const { setCredentials, setUser, logout, loadUserFromStorage } = authSlice.actions
-export default authSlice.reducer  // ✅ FIX: was authSlice.reducery (typo)
+    fetchUser()
+  }, [])

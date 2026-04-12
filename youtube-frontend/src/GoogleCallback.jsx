@@ -8,30 +8,32 @@ export default function GoogleCallback() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
- useEffect(() => {
-  const fetchUser = async () => {
-    try {
-      // Wait for cookie to be set
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const res = await fetch(
-        'https://node-chai-production.up.railway.app/api/v1/user/current-user',
-        { method: 'GET', credentials: 'include' }
-      )
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message)
-      const user = data.data
-      dispatch(setCredentials({
-        user,
-        accessToken: null,
-      }))
-      navigate('/', { replace: true })
-    } catch (error) {
-      navigate('/login', { replace: true })
+  useEffect(() => {
+    const fetchUser = async (retries = 3) => {
+      try {
+        const res = await fetch(
+          'https://node-chai-production.up.railway.app/api/v1/user/current-user',
+          { method: 'GET', credentials: 'include' }
+        )
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message)
+
+        dispatch(setCredentials({
+          user: data.data,
+          accessToken: 'cookie-based',
+        }))
+
+        navigate('/', { replace: true })
+      } catch (error) {
+        if (retries > 0) {
+          setTimeout(() => fetchUser(retries - 1), 300)
+        } else {
+          navigate('/login', { replace: true })
+        }
+      }
     }
-  }
-  fetchUser()
-}, [])
+    fetchUser()
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#080808] flex items-center justify-center">
