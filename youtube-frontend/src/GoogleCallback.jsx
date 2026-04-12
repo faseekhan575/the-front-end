@@ -9,37 +9,28 @@ export default function GoogleCallback() {
   const dispatch = useDispatch()
 
  useEffect(() => {
-  const params = new URLSearchParams(window.location.search)
-  const accessToken = params.get('accessToken')
-  const refreshToken = params.get('refreshToken')
-
-  if (accessToken) {
-    localStorage.clear()
-
-    const base64Payload = accessToken.split('.')[1]
-    const payload = JSON.parse(atob(base64Payload))
-
-    dispatch(setCredentials({
-      user: {
-        _id: payload._id,
-        username: payload.username,
-        email: payload.email,
-        fullname: payload.fullname,
-      },
-      accessToken,
-    }))
-
-    if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken)
-    }
-
-    setTimeout(() => {
+  const fetchUser = async () => {
+    try {
+      // Wait for cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const res = await fetch(
+        'https://node-chai-production.up.railway.app/api/v1/user/current-user',
+        { method: 'GET', credentials: 'include' }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message)
+      const user = data.data
+      dispatch(setCredentials({
+        user,
+        accessToken: null,
+      }))
       navigate('/', { replace: true })
-    }, 500)
-
-  } else {
-    navigate('/login', { replace: true })
+    } catch (error) {
+      navigate('/login', { replace: true })
+    }
   }
+  fetchUser()
 }, [])
 
   return (
