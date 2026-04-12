@@ -464,6 +464,158 @@ function EditProfileModal({ isOpen, onClose, currentUser }) {
   )
 }
 
+// ─── Google User Welcome Popup ────────────────────────────────────────────────
+function GoogleUserWelcomePopup({ currentUser, onEdit, onDismiss }) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (!currentUser) return
+    const isGoogle = currentUser.isGoogleUser
+    const nocover = !currentUser.coverImages || currentUser.coverImages === ''
+    const dismissed = localStorage.getItem(`google_popup_dismissed_${currentUser._id}`)
+    if (isGoogle && nocover && !dismissed) {
+      setTimeout(() => setVisible(true), 1200)
+    }
+  }, [currentUser])
+
+  const handleDismiss = () => {
+    localStorage.setItem(`google_popup_dismissed_${currentUser._id}`, 'true')
+    setVisible(false)
+    onDismiss?.()
+  }
+
+  const handleEdit = () => {
+    localStorage.setItem(`google_popup_dismissed_${currentUser._id}`, 'true')
+    setVisible(false)
+    onEdit?.()
+  }
+
+  if (!visible) return null
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+        onClick={handleDismiss}
+      />
+
+      {/* Card */}
+      <div className="relative w-full max-w-sm animate-[popupIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+
+        {/* Glow effects */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-600/20 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute -bottom-10 right-0 w-32 h-32 bg-blue-600/15 rounded-full blur-[50px] pointer-events-none" />
+
+        <div className="relative bg-[#0f0f0f] border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.9)]">
+
+          {/* Top gradient banner */}
+          <div className="h-32 bg-gradient-to-br from-red-950/60 via-zinc-900 to-zinc-950 relative overflow-hidden flex items-center justify-center">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(220,38,38,0.15),transparent_70%)]" />
+            <div className="absolute top-2 left-2 right-2 bottom-0 bg-gradient-to-b from-transparent to-[#0f0f0f]" />
+
+            {/* Floating circles decoration */}
+            <div className="absolute top-3 left-6 w-16 h-16 border border-white/5 rounded-full" />
+            <div className="absolute top-6 left-10 w-8 h-8 border border-white/5 rounded-full" />
+            <div className="absolute top-2 right-8 w-12 h-12 border border-white/5 rounded-full" />
+
+            {/* Google icon big centered */}
+            <div className="relative z-10 w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-black/50 ring-4 ring-white/10">
+              <svg width="36" height="36" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Avatar overlapping banner */}
+          <div className="flex justify-center -mt-8 relative z-10">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-[#0f0f0f] shadow-2xl border border-white/10">
+                <img
+                  src={currentUser?.avatar || '/default-avatar.png'}
+                  alt={currentUser?.fullname}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Green verified dot */}
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-[#0f0f0f] flex items-center justify-center">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="white">
+                  <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="px-7 pt-4 pb-7 text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 mb-4">
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase">New Google Account</span>
+            </div>
+
+            <h2 className="text-2xl font-black tracking-tight mb-2">
+              Hey, {currentUser?.fullname?.split(' ')[0]}! 👋
+            </h2>
+            <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+              Welcome to <span className="text-white font-semibold">FaseehVision!</span> Your profile looks a little empty. Add a cover image so other creators can recognize you! 🎨
+            </p>
+
+            {/* What's missing */}
+            <div className="flex gap-2 mb-6">
+              <div className="flex-1 bg-amber-500/8 border border-amber-500/20 rounded-2xl px-3 py-3 flex flex-col items-center gap-1.5">
+                <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
+                  <ImageIcon size={16} className="text-amber-400" />
+                </div>
+                <span className="text-[10px] font-bold text-amber-400">Cover Image</span>
+                <span className="text-[9px] text-amber-400/50">Missing</span>
+              </div>
+              <div className="flex-1 bg-emerald-500/8 border border-emerald-500/20 rounded-2xl px-3 py-3 flex flex-col items-center gap-1.5">
+                <div className="w-8 h-8 bg-emerald-500/15 rounded-xl flex items-center justify-center">
+                  <Camera size={16} className="text-emerald-400" />
+                </div>
+                <span className="text-[10px] font-bold text-emerald-400">Profile Photo</span>
+                <span className="text-[9px] text-emerald-400/50">From Google ✓</span>
+              </div>
+              <div className="flex-1 bg-blue-500/8 border border-blue-500/20 rounded-2xl px-3 py-3 flex flex-col items-center gap-1.5">
+                <div className="w-8 h-8 bg-blue-500/15 rounded-xl flex items-center justify-center">
+                  <UserIcon size={16} className="text-blue-400" />
+                </div>
+                <span className="text-[10px] font-bold text-blue-400">Username</span>
+                <span className="text-[9px] text-blue-400/50">Auto-set ✓</span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <button
+              onClick={handleEdit}
+              className="w-full flex items-center justify-center gap-2.5 bg-red-600 hover:bg-red-500 active:scale-[0.98] py-4 rounded-2xl font-bold text-[15px] transition-all shadow-lg shadow-red-900/30 mb-3 hover:scale-[1.02]"
+            >
+              <Pencil size={17} />
+              Complete My Profile
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="w-full py-3 rounded-2xl text-sm font-semibold text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes popupIn {
+          from { opacity: 0; transform: scale(0.85) translateY(20px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
+    </div>
+  )
+}
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 export default function RootLayout() {
   const [sidebarOpen,      setSidebarOpen]      = useState(false)
@@ -536,7 +688,17 @@ export default function RootLayout() {
         onClose={() => setProfileModalOpen(false)}
         currentUser={currentUser}
       />
-
+<GoogleUserWelcomePopup
+  currentUser={currentUser}
+  onEdit={() => {
+    setProfileModalOpen(true)
+    // pre-open cover tab
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('openCoverTab'))
+    }, 100)
+  }}
+  onDismiss={() => {}}
+/>
       <Toaster position="top-right" toastOptions={{
         style: { background: '#161616', color: '#fff', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px' }
       }} />
