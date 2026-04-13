@@ -20,7 +20,7 @@ export default function GoogleCallback() {
 
         dispatch(setCredentials({
           user: data.data,
-          accessToken: 'cookie-based',
+          accessToken: null, // ✅ null — cookies handle auth, user saved to localStorage
         }))
 
         navigate('/', { replace: true })
