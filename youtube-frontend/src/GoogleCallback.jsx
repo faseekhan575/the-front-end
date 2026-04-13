@@ -11,16 +11,26 @@ export default function GoogleCallback() {
   useEffect(() => {
     const fetchUser = async (retries = 3) => {
       try {
+        // Get URL token for iOS Safari fallback
+        const params = new URLSearchParams(window.location.search)
+        const urlToken = params.get('accessToken')
+
+        // Cookie is primary, URL token is iOS fallback
+        const headers = {}
+        if (urlToken) {
+          headers['Authorization'] = `Bearer ${urlToken}`
+        }
+
         const res = await fetch(
           'https://node-chai-production.up.railway.app/api/v1/user/current-user',
-          { method: 'GET', credentials: 'include' }
+          { method: 'GET', credentials: 'include', headers }
         )
         const data = await res.json()
         if (!res.ok) throw new Error(data.message)
 
         dispatch(setCredentials({
           user: data.data,
-          accessToken: null, // ✅ null — cookies handle auth, user saved to localStorage
+          accessToken: urlToken || 'cookie-based', // ✅ never null — keeps Redux alive on refresh
         }))
 
         navigate('/', { replace: true })
