@@ -13,7 +13,6 @@ import {
   Pencil, Camera, Check, AlertCircle, Loader2, User, AtSign, Mail, Save,
   CheckCircle2, XCircle, Info, LogOut, ShieldAlert,
 } from 'lucide-react'
-import WelcomePopup from './Welcomepopup'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -295,7 +294,6 @@ function VideoCard({ video, trendingRank }) {
       onClick={(e) => {
         if (!navigator.onLine) {
           e.preventDefault()
-          // show overlay by setting state on parent — use custom event
           window.dispatchEvent(new CustomEvent('offlineVideoClick'))
         }
       }}
@@ -342,7 +340,6 @@ function VideoCard({ video, trendingRank }) {
           <h3 className="font-semibold text-[13px] sm:text-[14px] leading-snug line-clamp-2 text-zinc-100 group-hover:text-white transition-colors">
             {video.title}
           </h3>
-          {/* ✅ Bright white creator name */}
           <Link
             to={`/channel/${video.owner?.username}`}
             onClick={(e) => e.stopPropagation()}
@@ -350,7 +347,6 @@ function VideoCard({ video, trendingRank }) {
           >
             {video.owner?.fullname || video.owner?.username}
           </Link>
-          {/* ✅ Bright views + time */}
           <div className="flex items-center gap-1 mt-[3px] flex-wrap">
             <Eye size={11} className="text-zinc-300 flex-shrink-0" />
             <span className="text-[11px] text-zinc-300 font-semibold">{formatViews(video.views)}</span>
@@ -358,7 +354,6 @@ function VideoCard({ video, trendingRank }) {
             <span className="text-zinc-700 text-[10px]">·</span>
             <span className="text-[11px] text-zinc-400">{timeAgo(video.createdAt)}</span>
           </div>
-          {/* ✅ Smart tags — rank-based trending + new */}
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             {trendingRank === 1 && (
               <span className="inline-flex items-center gap-0.5 bg-red-600 text-white text-[9px] font-bold px-2 h-4 rounded-md tracking-wide">
@@ -387,15 +382,13 @@ function VideoCard({ video, trendingRank }) {
   )
 }
 
-// ─── Shimmer Skeleton — matches YouTube single-column card ────────────────────
+// ─── Shimmer Skeleton ─────────────────────────────────────────────────────────
 function VideoSkeleton() {
   return (
     <div className="w-full animate-pulse">
-      {/* Thumbnail placeholder */}
       <div className="relative w-full aspect-video bg-white/[0.06] rounded-xl sm:rounded-2xl overflow-hidden mb-2.5">
         <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent animate-[shimmer_2s_infinite]" />
       </div>
-      {/* Meta placeholder */}
       <div className="flex gap-2.5">
         <div className="w-8 h-8 rounded-full bg-white/[0.06] flex-shrink-0 mt-0.5" />
         <div className="flex-1 space-y-2 pt-0.5">
@@ -446,6 +439,65 @@ function SessionExpiredScreen() {
       </button>
       <p className="text-zinc-700 text-xs mt-5">FaseehVision · keeping your account safe 🔒</p>
     </div>
+  )
+}
+
+// ─── Google-style Auth Button ─────────────────────────────────────────────────
+function GoogleAuthBar({ to, icon, label, sublabel, variant = 'google' }) {
+  return (
+    <Link
+      to={to}
+      className={`
+        w-full flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all duration-200
+        hover:scale-[1.015] active:scale-[0.985] group
+        ${variant === 'google'
+          ? 'bg-white hover:bg-gray-50 border-white/90 shadow-lg shadow-black/30'
+          : 'bg-white/[0.05] hover:bg-white/[0.09] border-white/[0.1] shadow-md shadow-black/20'
+        }
+      `}
+    >
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+        ${variant === 'google' ? 'bg-white ring-1 ring-black/[0.06]' : 'bg-white/[0.08]'}
+      `}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <p className={`font-semibold text-[14px] leading-tight
+          ${variant === 'google' ? 'text-[#1f1f1f]' : 'text-zinc-100'}
+        `}>
+          {label}
+        </p>
+        {sublabel && (
+          <p className={`text-[11px] mt-0.5
+            ${variant === 'google' ? 'text-[#666]' : 'text-zinc-500'}
+          `}>
+            {sublabel}
+          </p>
+        )}
+      </div>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        className={`flex-shrink-0 opacity-40 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all
+          ${variant === 'google' ? 'text-[#333]' : 'text-zinc-400'}
+        `}
+      >
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </svg>
+    </Link>
+  )
+}
+
+// ─── Google SVG Icon ──────────────────────────────────────────────────────────
+function GoogleIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
   )
 }
 
@@ -526,15 +578,20 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <WelcomePopup />
 
         <div className="relative mb-10 rounded-3xl overflow-hidden border border-white/[0.07] bg-[#0a0a0a]">
-          {/* subtle noise texture via pseudo-element workaround */}
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(ellipse_at_top_left,#ff0000_0%,transparent_60%)]" />
           <div className="relative z-10 p-8 md:p-16 text-center">
-            <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 border border-red-500/10">
-              <Heart className="w-8 h-8 text-red-500" />
+
+            {/* ── Profile photo instead of Heart icon ── */}
+            <div className="mx-auto w-20 h-20 rounded-full overflow-hidden mb-6 ring-2 ring-white/10 shadow-xl shadow-black/40">
+              <img
+                src="/for.jpeg"
+                alt="Faseeh Khan"
+                className="w-full h-full object-cover"
+              />
             </div>
+
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent">
               Welcome to the Family
             </h2>
@@ -542,22 +599,60 @@ export default function Home() {
               Hi, this is Faseeh Khan — welcome to our YouTube app! Join our growing community of creators,
               dreamers, and viewers. Watch, like, comment, upload, and manage everything from one dashboard.
             </p>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2.5 bg-red-600 hover:bg-red-500 text-white
-                         font-semibold text-base px-8 py-3.5 rounded-2xl transition-all hover:scale-105 active:scale-95"
-            >
-              <LogIn size={18} />
-              Login to Join
-            </Link>
-            <p className="text-zinc-600 mt-5 text-sm">
-              No account?{' '}
-              <Link to="/register" className="text-red-400 hover:text-red-300 underline">
-                Create one free
-              </Link>
-            </p>
+
+            {/* Auth buttons — max width for professional look */}
+            <div className="max-w-sm mx-auto flex flex-col gap-3">
+
+              {/* Google Login Bar */}
+              <GoogleAuthBar
+                to="/login"
+                variant="google"
+                icon={<GoogleIcon size={20} />}
+                label="Continue with Google"
+                sublabel="Sign in to your FaseehVision account"
+              />
+
+              {/* ── OR divider ── */}
+              <div className="flex items-center gap-3 py-1">
+                <div className="flex-1 h-px bg-white/[0.1]" />
+                <span className="text-white font-black text-2xl tracking-tight select-none">OR</span>
+                <div className="flex-1 h-px bg-white/[0.1]" />
+              </div>
+
+              {/* Manual Login Bar */}
+              <GoogleAuthBar
+                to="/login"
+                variant="manual"
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                }
+                label="Login manually"
+                sublabel="Use your email and password"
+              />
+
+              {/* Create Account Bar */}
+              <GoogleAuthBar
+                to="/register"
+                variant="manual"
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <line x1="19" y1="8" x2="19" y2="14"/>
+                    <line x1="22" y1="11" x2="16" y2="11"/>
+                  </svg>
+                }
+                label="Create account manually"
+                sublabel="Sign up free with email"
+              />
+
+            </div>
           </div>
         </div>
+
         <div className="text-center text-zinc-700 text-xs">
           faseeh khan · everything is possible when you have dreams
         </div>
@@ -657,8 +752,6 @@ export default function Home() {
         onSaved={refetchUser}
       />
 
-      <WelcomePopup />
-
       {/* ── HERO ── */}
       <div className="relative mb-6 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/[0.06] bg-[#0c0c0c]">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_60%_80%_at_80%_50%,#ff000015_0%,transparent_100%)]" />
@@ -707,7 +800,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Search bar — mobile optimized */}
+          {/* Search bar */}
           <div className="relative w-full max-w-2xl">
             <div className={`flex items-center bg-white/[0.06] border rounded-xl sm:rounded-2xl px-3.5 sm:px-5 py-3 sm:py-4 transition-all gap-2
               ${inputValue ? 'border-red-500/40' : 'border-white/[0.08] focus-within:border-white/20'}`}>
@@ -776,9 +869,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── VIDEO GRID — YouTube style ── */}
+      {/* ── VIDEO GRID ── */}
       {(() => {
-        // Compute top 3 video IDs by views dynamically
         const top3 = [...filteredVideos]
           .sort((a, b) => (b.views || 0) - (a.views || 0))
           .slice(0, 3)
